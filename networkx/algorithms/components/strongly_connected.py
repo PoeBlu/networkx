@@ -228,8 +228,7 @@ def strongly_connected_components_recursive(G):
         stack.append(v)
         for w in G[v]:
             if w not in visited:
-                for c in visit(w, cnt):
-                    yield c
+                yield from visit(w, cnt)
             if w not in component:
                 root[v] = min(root[v], root[w])
         if root[v] == visited[v]:
@@ -249,8 +248,7 @@ def strongly_connected_components_recursive(G):
     stack = []
     for source in G:
         if source not in visited:
-            for c in visit(source, cnt):
-                yield c
+            yield from visit(source, cnt)
 
 
 @not_implemented_for('undirected')
@@ -282,7 +280,7 @@ def number_strongly_connected_components(G):
     -----
     For directed graphs only.
     """
-    return sum(1 for scc in strongly_connected_components(G))
+    return sum(1 for _ in strongly_connected_components(G))
 
 
 @not_implemented_for('undirected')
@@ -376,7 +374,7 @@ def condensation(G, scc=None):
         return C
     for i, component in enumerate(scc):
         members[i] = component
-        mapping.update((n, i) for n in component)
+        mapping |= ((n, i) for n in component)
     number_of_components = i + 1
     C.add_nodes_from(range(number_of_components))
     C.add_edges_from((mapping[u], mapping[v]) for u, v in G.edges()

@@ -73,8 +73,8 @@ def kl_connected_subgraph(G, k, l, low_memory=False, same_as_graph=False):
             (u, v) = edge
             # Get copy of graph needed for this search
             if low_memory:
-                verts = set([u, v])
-                for i in range(k):
+                verts = {u, v}
+                for _ in range(k):
                     for w in verts.copy():
                         verts.update(G[w])
                 G2 = G.subgraph(verts).copy()
@@ -108,9 +108,7 @@ def kl_connected_subgraph(G, k, l, low_memory=False, same_as_graph=False):
                     graphOK = False
     # We looked through all edges and removed none of them.
     # So, H is the maximal (k,l)-connected subgraph of G
-    if same_as_graph:
-        return (H, graphOK)
-    return H
+    return (H, graphOK) if same_as_graph else H
 
 
 def is_kl_connected(G, k, l, low_memory=False):
@@ -158,8 +156,8 @@ def is_kl_connected(G, k, l, low_memory=False):
         (u, v) = edge
         # Get copy of graph needed for this search
         if low_memory:
-            verts = set([u, v])
-            for i in range(k):
+            verts = {u, v}
+            for _ in range(k):
                 [verts.update(G.neighbors(w)) for w in verts.copy()]
             G2 = G.subgraph(verts)
         else:

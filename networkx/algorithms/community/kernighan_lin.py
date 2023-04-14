@@ -16,20 +16,19 @@ def _compute_delta(G, A, B, weight):
     delta = defaultdict(float)
     for u, v, d in G.edges(data=True):
         w = d.get(weight, 1)
-        if u in A:
-            if v in A:
-                delta[u] -= w
-                delta[v] -= w
-            elif v in B:
-                delta[u] += w
-                delta[v] += w
-        elif u in B:
-            if v in A:
-                delta[u] += w
-                delta[v] += w
-            elif v in B:
-                delta[u] -= w
-                delta[v] -= w
+        if (
+            u in A
+            and v in A
+            or u not in A
+            and u in B
+            and v not in A
+            and v in B
+        ):
+            delta[u] -= w
+            delta[v] -= w
+        elif u in A and v in B or u not in A and u in B and v in A:
+            delta[u] += w
+            delta[v] += w
     return delta
 
 
@@ -69,7 +68,7 @@ def _kernighan_lin_pass(G, A, B, weight):
                 except KeyError:
                     w = 0
                 gain.append((delta[u] + delta[v] - 2 * w, u, v))
-        if len(gain) == 0:
+        if not gain:
             break
         maxg, u, v = max(gain, key=itemgetter(0))
         swapped |= {u, v}
@@ -141,7 +140,7 @@ def kernighan_lin_bisection(G, partition=None, max_iter=10, weight='weight',
         raise ValueError('partition must be two sets')
     if not is_partition(G, (A, B)):
         raise nx.NetworkXError('partition invalid')
-    for i in range(max_iter):
+    for _ in range(max_iter):
         # `gains` is a list of triples of the form (g, u, v) for each
         # node pair (u, v), where `g` is the gain of that node pair.
         gains = _kernighan_lin_pass(G, A, B, weight)

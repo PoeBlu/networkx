@@ -130,7 +130,7 @@ def all_node_cuts(G, k=None, flow_func=None):
         for v in non_adjacent:
             # step 4: compute maximum flow in an Even-Tarjan reduction H of G
             # and step 5: build the associated residual network R
-            R = flow_func(H, '%sB' % mapping[x], '%sA' % mapping[v], **kwargs)
+            R = flow_func(H, f'{mapping[x]}B', f'{mapping[v]}A', **kwargs)
             flow_value = R.graph['flow_value']
 
             if flow_value == k:
@@ -138,14 +138,15 @@ def all_node_cuts(G, k=None, flow_func=None):
                 E1 = flowed_edges = [(u, w) for (u, w, d) in
                                      R.edges(data=True)
                                      if d['flow'] != 0]
-                VE1 = incident_nodes = set([n for edge in E1 for n in edge])
+                VE1 = incident_nodes = {n for edge in E1 for n in edge}
                 # Remove saturated edges form the residual network.
                 # Note that reversed edges are introduced with capacity 0
                 # in the residual graph and they need to be removed too.
-                saturated_edges = [(u, w, d) for (u, w, d) in
-                                   R.edges(data=True)
-                                   if d['capacity'] == d['flow']
-                                   or d['capacity'] == 0]
+                saturated_edges = [
+                    (u, w, d)
+                    for (u, w, d) in R.edges(data=True)
+                    if d['capacity'] in [d['flow'], 0]
+                ]
                 R.remove_edges_from(saturated_edges)
                 R_closure = nx.transitive_closure(R)
                 # step 6: shrink the strongly connected components of
@@ -156,7 +157,7 @@ def all_node_cuts(G, k=None, flow_func=None):
                 for n, scc in cmap.items():
                     inv_cmap[scc].append(n)
                 # Find the incident nodes in the condensed graph.
-                VE1 = set([cmap[n] for n in VE1])
+                VE1 = {cmap[n] for n in VE1}
                 # step 7: Compute all antichains of L;
                 # they map to closed sets in H.
                 # Any edge in H that links a closed set is part of a cutset.
@@ -177,7 +178,7 @@ def all_node_cuts(G, k=None, flow_func=None):
                     for n in S:
                         S_ancestors.update(R_closure._pred[n])
                     S.update(S_ancestors)
-                    if '%sB' % mapping[x] not in S or '%sA' % mapping[v] in S:
+                    if f'{mapping[x]}B' not in S or f'{mapping[v]}A' in S:
                         continue
                     # Find the cutset that links the node partition (S,~S) in H
                     cutset = set()
@@ -186,8 +187,9 @@ def all_node_cuts(G, k=None, flow_func=None):
                                       for w in original_H_pred[u] if w not in S)
                     # The edges in H that form the cutset are internal edges
                     # (ie edges that represent a node of the original graph G)
-                    if any([H_nodes[u]['id'] != H_nodes[w]['id']
-                            for u, w in cutset]):
+                    if any(
+                        H_nodes[u]['id'] != H_nodes[w]['id'] for u, w in cutset
+                    ):
                         continue
                     node_cut = {H_nodes[u]['id'] for u, _ in cutset}
 
@@ -207,19 +209,13 @@ def all_node_cuts(G, k=None, flow_func=None):
                 # Add edges to the auxiliary digraph.
                 # See build_residual_network for convention we used
                 # in residual graphs.
-                H.add_edge('%sB' % mapping[x], '%sA' % mapping[v],
-                           capacity=1)
-                H.add_edge('%sB' % mapping[v], '%sA' % mapping[x],
-                           capacity=1)
+                H.add_edge(f'{mapping[x]}B', f'{mapping[v]}A', capacity=1)
+                H.add_edge(f'{mapping[v]}B', f'{mapping[x]}A', capacity=1)
                 # Add edges to the residual network.
-                R.add_edge('%sB' % mapping[x], '%sA' % mapping[v],
-                           capacity=1)
-                R.add_edge('%sA' % mapping[v], '%sB' % mapping[x],
-                           capacity=0)
-                R.add_edge('%sB' % mapping[v], '%sA' % mapping[x],
-                           capacity=1)
-                R.add_edge('%sA' % mapping[x], '%sB' % mapping[v],
-                           capacity=0)
+                R.add_edge(f'{mapping[x]}B', f'{mapping[v]}A', capacity=1)
+                R.add_edge(f'{mapping[v]}A', f'{mapping[x]}B', capacity=0)
+                R.add_edge(f'{mapping[v]}B', f'{mapping[x]}A', capacity=1)
+                R.add_edge(f'{mapping[x]}A', f'{mapping[v]}B', capacity=0)
 
                 # Add again the saturated edges to reuse the residual network
                 R.add_edges_from(saturated_edges)
@@ -231,6 +227,4 @@ def _is_separating_set(G, cut):
         return True
 
     H = nx.restricted_view(G, cut, [])
-    if nx.is_connected(H):
-        return False
-    return True
+    return not nx.is_connected(H)

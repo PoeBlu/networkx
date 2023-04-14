@@ -225,12 +225,9 @@ def quotient_graph(G, partition, edge_relation=None, node_data=None,
 def _quotient_graph(G, partition, edge_relation=None, node_data=None,
                     edge_data=None, relabel=False, create_using=None):
     # Each node in the graph must be in exactly one block.
-    if any(sum(1 for b in partition if v in b) != 1 for v in G):
+    if any(sum(v in b for b in partition) != 1 for v in G):
         raise NetworkXException('each node must be in exactly one block')
-    if create_using is None:
-        H = G.__class__()
-    else:
-        H = nx.empty_graph(0, create_using)
+    H = G.__class__() if create_using is None else nx.empty_graph(0, create_using)
     # By default set some basic information about the subgraph that each block
     # represents on the nodes in the quotient graph.
     if node_data is None:
@@ -358,11 +355,7 @@ def contracted_nodes(G, u, v, self_loops=True, copy=True):
     This function is also available as `identified_nodes`.
     """
     # Copying has significant overhead and can be disabled if needed
-    if copy:
-        H = G.copy()
-    else:
-        H = G
-
+    H = G.copy() if copy else G
     # edge code uses G.edges(v) instead of G.adj[v] to handle multiedges
     if H.is_directed():
         in_edges = ((w if w != v else u, u, d)

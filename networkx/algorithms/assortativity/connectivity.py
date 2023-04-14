@@ -107,11 +107,10 @@ def average_degree_connectivity(G, source="in+out", target="in+out",
         nbrdeg = target_degree(neighbors(n))
         if weight is None:
             s = sum(d for n, d in nbrdeg)
-        else:  # weight nbr degree by weight of (n,nbr) edge
-            if reverse:
-                s = sum(G[nbr][n].get(weight, 1) * d for nbr, d in nbrdeg)
-            else:
-                s = sum(G[n][nbr].get(weight, 1) * d for nbr, d in nbrdeg)
+        elif reverse:
+            s = sum(G[nbr][n].get(weight, 1) * d for nbr, d in nbrdeg)
+        else:
+            s = sum(G[n][nbr].get(weight, 1) * d for nbr, d in nbrdeg)
         dnorm[k] += source_degree(n, weight=weight)
         dsum[k] += s
 

@@ -26,7 +26,7 @@ def atlas6():
         Attempt to check for isomorphisms and remove.
     """
 
-    Atlas = graph_atlas_g()[0:208]  # 208
+    Atlas = graph_atlas_g()[:208]
     # remove isolated nodes, only connected graphs are left
     U = nx.Graph()  # graph for union of all graphs in atlas
     for G in Atlas:
@@ -51,10 +51,7 @@ def atlas6():
 
 def iso(G1, glist):
     """Quick and dirty nonisomorphism checker used to check isomorphisms."""
-    for G2 in glist:
-        if isomorphic(G1, G2):
-            return True
-    return False
+    return any(isomorphic(G1, G2) for G2 in glist)
 
 
 G = atlas6()

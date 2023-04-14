@@ -117,7 +117,7 @@ def eigenvector_centrality(G, max_iter=100, tol=1.0e-6, nstart=None,
     x = {k: v / nstart_sum for k, v in nstart.items()}
     nnodes = G.number_of_nodes()
     # make up to max_iter iterations
-    for i in range(max_iter):
+    for _ in range(max_iter):
         xlast = x
         x = xlast.copy()  # Start with xlast times I to iterate with (A+I)
         # do the multiplication y^T = x^T A (left eigenvector)

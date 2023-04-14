@@ -170,9 +170,7 @@ def local_bridges(G, with_span=True, weight=None):
                 enodes = {u, v}
 
                 def hide_edge(n, nbr, d):
-                    if n not in enodes or nbr not in enodes:
-                        return wt(n, nbr, d)
-                    return None
+                    return wt(n, nbr, d) if n not in enodes or nbr not in enodes else None
 
                 try:
                     span = nx.shortest_path_length(G, u, v, weight=hide_edge)

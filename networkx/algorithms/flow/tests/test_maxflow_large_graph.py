@@ -46,7 +46,7 @@ def gen_pyramid(N):
 
 def read_graph(name):
     dirname = os.path.dirname(__file__)
-    path = os.path.join(dirname, name + ".gpickle.bz2")
+    path = os.path.join(dirname, f"{name}.gpickle.bz2")
     return nx.read_gpickle(path)
 
 

@@ -317,7 +317,7 @@ def optimal_edit_paths(
        https://hal.archives-ouvertes.fr/hal-01168816
 
     """
-    paths = list()
+    paths = []
     bestcost = None
     for vertex_path, edge_path, cost in optimize_edit_paths(
         G1,
@@ -335,7 +335,7 @@ def optimal_edit_paths(
     ):
         # assert bestcost is None or cost <= bestcost
         if bestcost is not None and cost < bestcost:
-            paths = list()
+            paths = []
         paths.append((vertex_path, edge_path))
         bestcost = cost
     return paths, bestcost

@@ -132,11 +132,10 @@ def strategy_independent_set(G, colors):
 
     """
     remaining_nodes = set(G)
-    while len(remaining_nodes) > 0:
+    while remaining_nodes:
         nodes = _maximal_independent_set(G.subgraph(remaining_nodes))
         remaining_nodes -= nodes
-        for v in nodes:
-            yield v
+        yield from nodes
 
 
 def strategy_connected_sequential_bfs(G, colors):

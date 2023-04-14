@@ -375,7 +375,7 @@ class TestMaxFlowMinCutInterface:
         self.H = H
 
     def test_flow_func_not_callable(self):
-        elements = ['this_should_be_callable', 10, set([1, 2, 3])]
+        elements = ['this_should_be_callable', 10, {1, 2, 3}]
         G = nx.Graph()
         G.add_weighted_edges_from([(0, 1, 1), (1, 2, 1), (2, 3, 1)], weight='capacity')
         for flow_func in interface_funcs:
@@ -432,7 +432,7 @@ class TestMaxFlowMinCutInterface:
         R = build_residual_network(G, 'capacity')
         for interface_func in interface_funcs:
             for flow_func in flow_funcs:
-                for i in range(3):
+                for _ in range(3):
                     result = interface_func(G, 'x', 'y', flow_func=flow_func,
                                             residual=R)
                     if interface_func in max_min_funcs:

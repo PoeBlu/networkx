@@ -28,8 +28,7 @@ def tarjan_bridge_graph():
     ccs = [(1, 2, 4, 3, 1, 4), (5, 6, 7, 5), (8, 9, 10, 8),
            (17, 18, 16, 15, 17), (11, 12, 14, 13, 11, 14)]
     bridges = [(4, 8), (3, 5), (3, 17)]
-    G = nx.Graph(it.chain(*(pairwise(path) for path in ccs + bridges)))
-    return G
+    return nx.Graph(it.chain(*(pairwise(path) for path in ccs + bridges)))
 
 
 def test_weight_key():
@@ -248,7 +247,7 @@ def _assert_solution_properties(G, aug_edges, avail_dict=None):
     unique_aug = list(map(tuple, map(sorted, aug_edges)))
     assert len(aug_edges) == len(unique_aug), 'edges should be unique'
 
-    assert not any(u == v for u, v in unique_aug), 'should be no self-edges'
+    assert all(u != v for u, v in unique_aug), 'should be no self-edges'
 
     assert not any(G.has_edge(u, v) for u, v in unique_aug), 'aug edges and G.edges should be disjoint'
 
@@ -276,20 +275,17 @@ def _augment_and_check(G, k, avail=None, weight=None, verbose=False,
             generator = nx.k_edge_augmentation(G, k=k, weight=weight,
                                                avail=avail)
             assert not isinstance(generator, list), 'should always return an iter'
-            aug_edges = []
-            for edge in generator:
-                aug_edges.append(edge)
+            aug_edges = list(generator)
         except nx.NetworkXUnfeasible:
             infeasible = True
             info['infeasible'] = True
-            assert len(aug_edges) == 0, 'should not generate anything if unfeasible'
+            assert not aug_edges, 'should not generate anything if unfeasible'
 
             if avail is None:
                 n_nodes = G.number_of_nodes()
-                assert n_nodes <= k, (
-                    'unconstrained cases are only unfeasible if |V| <= k. '
-                    'Got |V|={} and k={}'.format(n_nodes, k)
-                )
+                assert (
+                    n_nodes <= k
+                ), f'unconstrained cases are only unfeasible if |V| <= k. Got |V|={n_nodes} and k={k}'
             else:
                 if max_aug_k is None:
                     G_aug_all = G.copy()
@@ -334,7 +330,7 @@ def _augment_and_check(G, k, avail=None, weight=None, verbose=False,
         # Find the weight of the augmentation
         num_edges = len(aug_edges)
         if avail is not None:
-            total_weight = sum([avail_dict[e] for e in aug_edges])
+            total_weight = sum(avail_dict[e] for e in aug_edges)
         else:
             total_weight = num_edges
 
@@ -352,8 +348,7 @@ def _augment_and_check(G, k, avail=None, weight=None, verbose=False,
 
         # Do checks
         if not infeasible and orig_k < k:
-            assert info['aug_k'] >= k, (
-                'connectivity should increase to k={} or more'.format(k))
+            assert info['aug_k'] >= k, f'connectivity should increase to k={k} or more'
 
         assert info['aug_k'] >= orig_k, (
             'augmenting should never reduce connectivity')
@@ -362,14 +357,14 @@ def _augment_and_check(G, k, avail=None, weight=None, verbose=False,
 
     except Exception:
         info['failed'] = True
-        print('edges = {}'.format(list(G.edges())))
-        print('nodes = {}'.format(list(G.nodes())))
-        print('aug_edges = {}'.format(list(aug_edges)))
-        print('info  = {}'.format(info))
+        print(f'edges = {list(G.edges())}')
+        print(f'nodes = {list(G.nodes())}')
+        print(f'aug_edges = {list(aug_edges)}')
+        print(f'info  = {info}')
         raise
     else:
         if verbose:
-            print('info  = {}'.format(info))
+            print(f'info  = {info}')
 
     if infeasible:
         aug_edges = None
@@ -413,7 +408,7 @@ def _check_augmentations(G, avail=None, max_k=None, weight=None,
     for k in range(1, max_k + 1):
         if verbose:
             print('---------------')
-            print('Checking k = {}'.format(k))
+            print(f'Checking k = {k}')
 
         # Check the unweighted version
         if verbose:

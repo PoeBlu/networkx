@@ -52,14 +52,11 @@ def chess_pgn_graph(pgn_file="chess_masters_WCC.pgn.bz2"):
         if line.startswith("["):
             tag, value = line[1:-1].split(" ", 1)
             game[str(tag)] = value.strip('"')
-        else:
-            # empty line after tag set indicates
-            # we finished reading game info
-            if game:
-                white = game.pop("White")
-                black = game.pop("Black")
-                G.add_edge(white, black, **game)
-                game = {}
+        elif game:
+            white = game.pop("White")
+            black = game.pop("Black")
+            G.add_edge(white, black, **game)
+            game = {}
     return G
 
 
@@ -79,7 +76,9 @@ if len(Gcc) > 1:
     print(Gcc[1].nodes())
 
 # find all games with B97 opening (as described in ECO)
-openings = set([game_info["ECO"] for (white, black, game_info) in G.edges(data=True)])
+openings = {
+    game_info["ECO"] for (white, black, game_info) in G.edges(data=True)
+}
 print(f"\nFrom a total of {len(openings)} different openings,")
 print("the following games used the Sicilian opening")
 print('with the Najdorff 7...Qb6 "Poisoned Pawn" variation.\n')
@@ -94,11 +93,7 @@ for (white, black, game_info) in G.edges(data=True):
 # make new undirected graph H without multi-edges
 H = nx.Graph(G)
 
-# edge width is proportional number of games played
-edgewidth = []
-for (u, v, d) in H.edges(data=True):
-    edgewidth.append(len(G.get_edge_data(u, v)))
-
+edgewidth = [len(G.get_edge_data(u, v)) for u, v, d in H.edges(data=True)]
 # node size is proportional to number of games won
 wins = dict.fromkeys(G.nodes(), 0.0)
 for (u, v, d) in G.edges(data=True):

@@ -177,18 +177,16 @@ def find_cliques(G):
                 cand.remove(q)
                 Q[-1] = q
                 adj_q = adj[q]
-                subg_q = subg & adj_q
-                if not subg_q:
-                    yield Q[:]
-                else:
-                    cand_q = cand & adj_q
-                    if cand_q:
+                if subg_q := subg & adj_q:
+                    if cand_q := cand & adj_q:
                         stack.append((subg, cand, ext_u))
                         Q.append(None)
                         subg = subg_q
                         cand = cand_q
                         u = max(subg, key=lambda u: len(cand & adj[u]))
                         ext_u = cand - adj[u]
+                else:
+                    yield Q[:]
             else:
                 Q.pop()
                 subg, cand, ext_u = stack.pop()
@@ -280,8 +278,7 @@ def find_cliques_recursive(G):
             else:
                 cand_q = cand & adj_q
                 if cand_q:
-                    for clique in expand(subg_q, cand_q):
-                        yield clique
+                    yield from expand(subg_q, cand_q)
             Q.pop()
 
     return expand(set(G), set(G))
@@ -320,10 +317,7 @@ def make_max_clique_graph(G, create_using=None):
     steps.
 
     """
-    if create_using is None:
-        B = G.__class__()
-    else:
-        B = nx.empty_graph(0, create_using)
+    B = G.__class__() if create_using is None else nx.empty_graph(0, create_using)
     cliques = list(enumerate(set(c) for c in find_cliques(G)))
     # Add a numbered node for each clique.
     B.add_nodes_from(i for i, c in cliques)
@@ -411,9 +405,7 @@ def graph_clique_number(G, cliques=None):
     """
     if cliques is None:
         cliques = find_cliques(G)
-    if len(G.nodes) < 1:
-        return 0
-    return max([len(c) for c in cliques] or [1])
+    return 0 if len(G.nodes) < 1 else max([len(c) for c in cliques] or [1])
 
 
 def graph_number_of_cliques(G, cliques=None):
@@ -474,11 +466,9 @@ def node_clique_number(G, nodes=None, cliques=None):
     if not isinstance(nodes, list):   # check for a list
         v = nodes
         # assume it is a single value
-        d = max([len(c) for c in cliques if v in c])
+        d = max(len(c) for c in cliques if v in c)
     else:
-        d = {}
-        for v in nodes:
-            d[v] = max([len(c) for c in cliques if v in c])
+        d = {v: max(len(c) for c in cliques if v in c) for v in nodes}
     return d
 
     # if nodes is None:                 # none, use entire graph
@@ -509,15 +499,11 @@ def number_of_cliques(G, nodes=None, cliques=None):
     if nodes is None:
         nodes = list(G.nodes())   # none, get entire graph
 
-    if not isinstance(nodes, list):   # check for a list
-        v = nodes
+    if isinstance(nodes, list):
+        return {v: len([1 for c in cliques if v in c]) for v in nodes}
+    v = nodes
         # assume it is a single value
-        numcliq = len([1 for c in cliques if v in c])
-    else:
-        numcliq = {}
-        for v in nodes:
-            numcliq[v] = len([1 for c in cliques if v in c])
-    return numcliq
+    return len([1 for c in cliques if v in c])
 
 
 def cliques_containing_node(G, nodes=None, cliques=None):
@@ -532,12 +518,8 @@ def cliques_containing_node(G, nodes=None, cliques=None):
     if nodes is None:
         nodes = list(G.nodes())   # none, get entire graph
 
-    if not isinstance(nodes, list):   # check for a list
-        v = nodes
+    if isinstance(nodes, list):
+        return {v: [c for c in cliques if v in c] for v in nodes}
+    v = nodes
         # assume it is a single value
-        vcliques = [c for c in cliques if v in c]
-    else:
-        vcliques = {}
-        for v in nodes:
-            vcliques[v] = [c for c in cliques if v in c]
-    return vcliques
+    return [c for c in cliques if v in c]

@@ -22,21 +22,21 @@ merges = '\n'.join(merges).split('>>>')
 merges = [m.split('\n')[:2] for m in merges]
 merges = [m for m in merges if len(m) == 2 and m[1].strip()]
 
-num_commits = call("git rev-list %s..HEAD --count" % tag)[0]
+num_commits = call(f"git rev-list {tag}..HEAD --count")[0]
 print("A total of %s changes have been committed.\n" % num_commits)
 
 commits = call("git log --since='%s' --pretty=%%s --reverse" % tag_date)
 for c in commits:
-    print('- ' + c)
+    print(f'- {c}')
 
 print("It contained the following %d merges:\n" % len(merges))
 for (merge, message) in merges:
     if merge.startswith('Merge pull request #'):
-        PR = ' (%s)' % merge.split()[3]
+        PR = f' ({merge.split()[3]})'
     else:
         PR = ''
 
-    print('- ' + message + PR)
+    print(f'- {message}{PR}')
 
 print("\nMade by the following committers [alphabetical by last name]:\n")
 
@@ -44,11 +44,10 @@ authors = call("git log --since='%s' --format=%%aN" % tag_date)
 authors = [a.strip() for a in authors if a.strip()]
 
 def key(author):
-    author = [v for v in author.split() if v[0] in string.ascii_letters]
-    if len(author) > 0:
+    if author := [v for v in author.split() if v[0] in string.ascii_letters]:
         return author[-1]
 
 authors = sorted(set(authors), key=key)
 
 for a in authors:
-    print('- ' + a)
+    print(f'- {a}')

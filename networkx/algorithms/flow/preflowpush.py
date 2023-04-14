@@ -20,9 +20,9 @@ def preflow_push_impl(G, s, t, capacity, residual, global_relabel_freq,
     """Implementation of the highest-label preflow-push algorithm.
     """
     if s not in G:
-        raise nx.NetworkXError('node %s not in graph' % str(s))
+        raise nx.NetworkXError(f'node {str(s)} not in graph')
     if t not in G:
-        raise nx.NetworkXError('node %s not in graph' % str(t))
+        raise nx.NetworkXError(f'node {str(t)} not in graph')
     if s == t:
         raise nx.NetworkXError('source and sink are the same node')
 
@@ -31,11 +31,7 @@ def preflow_push_impl(G, s, t, capacity, residual, global_relabel_freq,
     if global_relabel_freq < 0:
         raise nx.NetworkXError('global_relabel_freq must be nonnegative.')
 
-    if residual is None:
-        R = build_residual_network(G, capacity)
-    else:
-        R = residual
-
+    R = build_residual_network(G, capacity) if residual is None else residual
     detect_unboundedness(R, s, t)
 
     R_nodes = R.nodes
@@ -103,7 +99,7 @@ def preflow_push_impl(G, s, t, capacity, residual, global_relabel_freq,
     # Partition nodes into levels.
     levels = [Level() for i in range(2 * n)]
     for u in R:
-        if u != s and u != t:
+        if u not in [s, t]:
             level = levels[R_nodes[u]['height']]
             if R_nodes[u]['excess'] > 0:
                 level.active.add(u)
@@ -113,7 +109,7 @@ def preflow_push_impl(G, s, t, capacity, residual, global_relabel_freq,
     def activate(v):
         """Move a node from the inactive set to the active set of its level.
         """
-        if v != s and v != t:
+        if v not in [s, t]:
             level = levels[R_nodes[v]['height']]
             if v in level.inactive:
                 level.inactive.remove(v)

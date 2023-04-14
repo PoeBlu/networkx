@@ -176,10 +176,9 @@ def to_dict_of_lists(G, nodelist=None):
     if nodelist is None:
         nodelist = G
 
-    d = {}
-    for n in nodelist:
-        d[n] = [nbr for nbr in G.neighbors(n) if nbr in nodelist]
-    return d
+    return {
+        n: [nbr for nbr in G.neighbors(n) if nbr in nodelist] for n in nodelist
+    }
 
 
 def from_dict_of_lists(d, create_using=None):
@@ -247,17 +246,16 @@ def to_dict_of_dicts(G, nodelist=None, edge_data=None):
         else:  # edge_data is not None
             for u, nbrdict in G.adjacency():
                 dod[u] = dod.fromkeys(nbrdict, edge_data)
-    else:  # nodelist is not None
-        if edge_data is None:
-            for u in nodelist:
-                dod[u] = {}
-                for v, data in ((v, data) for v, data in G[u].items() if v in nodelist):
-                    dod[u][v] = data
-        else:  # nodelist and edge_data are not None
-            for u in nodelist:
-                dod[u] = {}
-                for v in (v for v in G[u] if v in nodelist):
-                    dod[u][v] = edge_data
+    elif edge_data is None:
+        for u in nodelist:
+            dod[u] = {}
+            for v, data in ((v, data) for v, data in G[u].items() if v in nodelist):
+                dod[u][v] = data
+    else:  # nodelist and edge_data are not None
+        for u in nodelist:
+            dod[u] = {}
+            for v in (v for v in G[u] if v in nodelist):
+                dod[u][v] = edge_data
     return dod
 
 
@@ -304,8 +302,8 @@ def from_dict_of_dicts(d, create_using=None, multigraph_input=False):
                                  for v, datadict in nbrs.items()
                                  for key, data in datadict.items())
         else:  # Undirected
+            seen = set()   # don't add both directions of undirected graph
             if G.is_multigraph():
-                seen = set()   # don't add both directions of undirected graph
                 for u, nbrs in d.items():
                     for v, datadict in nbrs.items():
                         if (u, v) not in seen:
@@ -313,7 +311,6 @@ def from_dict_of_dicts(d, create_using=None, multigraph_input=False):
                                              for key, data in datadict.items())
                             seen.add((v, u))
             else:
-                seen = set()   # don't add both directions of undirected graph
                 for u, nbrs in d.items():
                     for v, datadict in nbrs.items():
                         if (u, v) not in seen:
@@ -321,22 +318,21 @@ def from_dict_of_dicts(d, create_using=None, multigraph_input=False):
                                              for key, data in datadict.items())
                             seen.add((v, u))
 
-    else:  # not a multigraph to multigraph transfer
-        if G.is_multigraph() and not G.is_directed():
-            # d can have both representations u-v, v-u in dict.  Only add one.
-            # We don't need this check for digraphs since we add both directions,
-            # or for Graph() since it is done implicitly (parallel edges not allowed)
-            seen = set()
-            for u, nbrs in d.items():
-                for v, data in nbrs.items():
-                    if (u, v) not in seen:
-                        G.add_edge(u, v, key=0)
-                        G[u][v][0].update(data)
-                    seen.add((v, u))
-        else:
-            G.add_edges_from(((u, v, data)
-                              for u, nbrs in d.items()
-                              for v, data in nbrs.items()))
+    elif G.is_multigraph() and not G.is_directed():
+        # d can have both representations u-v, v-u in dict.  Only add one.
+        # We don't need this check for digraphs since we add both directions,
+        # or for Graph() since it is done implicitly (parallel edges not allowed)
+        seen = set()
+        for u, nbrs in d.items():
+            for v, data in nbrs.items():
+                if (u, v) not in seen:
+                    G.add_edge(u, v, key=0)
+                    G[u][v][0].update(data)
+                seen.add((v, u))
+    else:
+        G.add_edges_from(((u, v, data)
+                          for u, nbrs in d.items()
+                          for v, data in nbrs.items()))
     return G
 
 
@@ -352,9 +348,7 @@ def to_edgelist(G, nodelist=None):
        Use only nodes specified in nodelist
 
     """
-    if nodelist is None:
-        return G.edges(data=True)
-    return G.edges(nodelist, data=True)
+    return G.edges(data=True) if nodelist is None else G.edges(nodelist, data=True)
 
 
 def from_edgelist(edgelist, create_using=None):

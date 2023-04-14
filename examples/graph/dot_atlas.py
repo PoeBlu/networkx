@@ -7,10 +7,11 @@ Write first 20 graphs from the graph atlas as graphviz dot files
 Gn.dot where n=0,19.
 """
 
+
 import networkx as nx
 from networkx.generators.atlas import graph_atlas_g
 
-atlas = graph_atlas_g()[0:20]
+atlas = graph_atlas_g()[:20]
 
 for G in atlas:
     print(
@@ -22,4 +23,4 @@ for G in atlas:
     A.node_attr["color"] = "red"
     A.node_attr["style"] = "filled"
     A.node_attr["shape"] = "circle"
-    A.write(G.name + ".dot")
+    A.write(f"{G.name}.dot")

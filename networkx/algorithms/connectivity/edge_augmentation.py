@@ -59,7 +59,7 @@ def is_k_edge_connected(G, k):
     False
     """
     if k < 1:
-        raise ValueError('k must be positive, not {}'.format(k))
+        raise ValueError(f'k must be positive, not {k}')
     # First try to quickly determine if G is not k-edge-connected
     if G.number_of_nodes() < k + 1:
         return False
@@ -118,18 +118,14 @@ def is_locally_k_edge_connected(G, s, t, k):
     True
     """
     if k < 1:
-        raise ValueError('k must be positive, not {}'.format(k))
+        raise ValueError(f'k must be positive, not {k}')
 
-    # First try to quickly determine s, t is not k-locally-edge-connected in G
     if G.degree(s) < k or G.degree(t) < k:
         return False
-    else:
-        # Otherwise perform the full check
-        if k == 1:
-            return nx.has_path(G, s, t)
-        else:
-            localk = nx.connectivity.local_edge_connectivity(G, s, t, cutoff=k)
-            return localk >= k
+    if k == 1:
+        return nx.has_path(G, s, t)
+    localk = nx.connectivity.local_edge_connectivity(G, s, t, cutoff=k)
+    return localk >= k
 
 
 @not_implemented_for('directed')
@@ -248,7 +244,7 @@ def k_edge_augmentation(G, k, avail=None, weight=None, partial=False):
     """
     try:
         if k <= 0:
-            raise ValueError('k must be a positive integer, not {}'.format(k))
+            raise ValueError(f'k must be a positive integer, not {k}')
         elif G.number_of_nodes() < k + 1:
             msg = 'impossible to {} connect in graph with less than {} nodes'
             raise nx.NetworkXUnfeasible(msg.format(k, k + 1))
@@ -268,22 +264,15 @@ def k_edge_augmentation(G, k, avail=None, weight=None, partial=False):
                 G, k=k, avail=avail, weight=weight, seed=0)
         # Do eager evaulation so we can catch any exceptions
         # Before executing partial code.
-        for edge in list(aug_edges):
-            yield edge
+        yield from list(aug_edges)
     except nx.NetworkXUnfeasible:
-        if partial:
-            # Return all available edges
-            if avail is None:
-                aug_edges = complement_edges(G)
-            else:
-                # If we can't k-edge-connect the entire graph, try to
-                # k-edge-connect as much as possible
-                aug_edges = partial_k_edge_augmentation(G, k=k, avail=avail,
-                                                        weight=weight)
-            for edge in aug_edges:
-                yield edge
-        else:
+        if not partial:
             raise
+        yield from complement_edges(
+            G
+        ) if avail is None else partial_k_edge_augmentation(
+            G, k=k, avail=avail, weight=weight
+        )
 
 
 def partial_k_edge_augmentation(G, k, avail, weight=None):
@@ -371,9 +360,7 @@ def partial_k_edge_augmentation(G, k, avail, weight=None):
             C.remove_edges_from(sub_avail.keys())
             # Find a subset of these edges that makes the compoment
             # k-edge-connected and ignore the rest
-            for edge in nx.k_edge_augmentation(C, k=k, avail=sub_avail):
-                yield edge
-
+            yield from nx.k_edge_augmentation(C, k=k, avail=sub_avail)
     # Generate all edges between CCs that could not be k-edge-connected
     for cc1, cc2 in it.combinations(k_edge_subgraphs, 2):
         for (u, v) in _edges_between_disjoint(H, cc1, cc2):
@@ -508,7 +495,8 @@ def _unpack_available_edges(avail, weight=None, G=None):
                 return d[weight]
             except TypeError:
                 return d
-        avail_uv = [tup[0:2] for tup in avail]
+
+        avail_uv = [tup[:2] for tup in avail]
         avail_w = [1 if len(tup) == 2 else _try_getitem(tup[-1])
                    for tup in avail]
 
@@ -679,8 +667,7 @@ def weighted_one_edge_augmentation(G, avail, weight=None, partial=False):
     # Yield the edge that generated the meta-edge
     for mu, mv, d in meta_mst.edges(data=True):
         if 'generator' in d:
-            edge = d['generator']
-            yield edge
+            yield d['generator']
 
 
 def unconstrained_bridge_augmentation(G):
@@ -778,9 +765,7 @@ def unconstrained_bridge_augmentation(G):
     # Choose pairs of distinct leaf nodes in each tree. If this is not
     # possible then make a pair using the single isolated node in the tree.
     vset1 = [
-        tuple(cc) * 2   # case1: an isolated node
-        if len(cc) == 1 else
-        sorted(cc, key=C.degree)[0:2]  # case2: pair of leaf nodes
+        tuple(cc) * 2 if len(cc) == 1 else sorted(cc, key=C.degree)[:2]
         for cc in nx.connected_components(C)
     ]
     if len(vset1) > 1:
@@ -909,15 +894,13 @@ def weighted_bridge_augmentation(G, avail, weight=None):
         connectors = list(one_edge_augmentation(H, avail=avail, weight=weight))
         H.add_edges_from(connectors)
 
-        for edge in connectors:
-            yield edge
+        yield from connectors
     else:
         connectors = []
         H = G
 
-    if len(avail) == 0:
-        if nx.has_bridges(H):
-            raise nx.NetworkXUnfeasible('no augmentation possible')
+    if len(avail) == 0 and nx.has_bridges(H):
+        raise nx.NetworkXUnfeasible('no augmentation possible')
 
     avail_uv, avail_w = _unpack_available_edges(avail, weight=weight, G=H)
 
@@ -1002,8 +985,7 @@ def weighted_bridge_augmentation(G, avail, weight=None):
             edge = data['generator']
             bridge_connectors.add(edge)
 
-    for edge in bridge_connectors:
-        yield edge
+    yield from bridge_connectors
 
 
 def _minimum_rooted_branching(D, root):
@@ -1025,9 +1007,7 @@ def _minimum_rooted_branching(D, root):
     rooted = D.copy()
     # root the graph by removing all predecessors to `root`.
     rooted.remove_edges_from([(u, root) for u in D.predecessors(root)])
-    # Then compute the branching / arborescence.
-    A = nx.minimum_spanning_arborescence(rooted)
-    return A
+    return nx.minimum_spanning_arborescence(rooted)
 
 
 def collapse(G, grouped_nodes):
@@ -1082,10 +1062,10 @@ def collapse(G, grouped_nodes):
             'grouped nodes must exist in G and be disjoint')
         remaining.difference_update(group)
         members[i] = group
-        mapping.update((n, i) for n in group)
+        mapping |= ((n, i) for n in group)
     # remaining nodes are in their own group
     for i, node in enumerate(remaining, start=i + 1):
-        group = set([node])
+        group = {node}
         members[i] = group
         mapping.update((n, i) for n in group)
     number_of_groups = i + 1
@@ -1251,5 +1231,4 @@ def greedy_k_edge_augmentation(G, k, avail=None, weight=None, seed=None):
             aug_edges.append((u, v))
 
     # Generate results
-    for edge in aug_edges:
-        yield edge
+    yield from aug_edges

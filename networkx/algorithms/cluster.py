@@ -127,11 +127,15 @@ def _directed_triangles_and_degree_iter(G, nodes=None):
         for j in chain(ipreds, isuccs):
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
-            directed_triangles += sum((1 for k in
-                                       chain((ipreds & jpreds),
-                                             (ipreds & jsuccs),
-                                             (isuccs & jpreds),
-                                             (isuccs & jsuccs))))
+            directed_triangles += sum(
+                1
+                for _ in chain(
+                    (ipreds & jpreds),
+                    (ipreds & jsuccs),
+                    (isuccs & jpreds),
+                    (isuccs & jsuccs),
+                )
+            )
         dtotal = len(ipreds) + len(isuccs)
         dbidirectional = len(ipreds & isuccs)
         yield (i, dtotal, dbidirectional, directed_triangles)
@@ -330,28 +334,22 @@ def clustering(G, nodes=None, weight=None):
        Physical Review E, 76(2), 026107 (2007).
     """
     if G.is_directed():
-        if weight is not None:
-            td_iter = _directed_weighted_triangles_and_degree_iter(
-                G, nodes, weight)
-            clusterc = {v: 0 if t == 0 else t / ((dt * (dt - 1) - 2 * db) * 2)
-                        for v, dt, db, t in td_iter}
-        else:
-            td_iter = _directed_triangles_and_degree_iter(G, nodes)
-            clusterc = {v: 0 if t == 0 else t / ((dt * (dt - 1) - 2 * db) * 2)
-                        for v, dt, db, t in td_iter}
+        td_iter = (
+            _directed_weighted_triangles_and_degree_iter(G, nodes, weight)
+            if weight is not None
+            else _directed_triangles_and_degree_iter(G, nodes)
+        )
+        clusterc = {v: 0 if t == 0 else t / ((dt * (dt - 1) - 2 * db) * 2)
+                    for v, dt, db, t in td_iter}
+    elif weight is not None:
+        td_iter = _weighted_triangles_and_degree_iter(G, nodes, weight)
+        clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
+                    v, d, t in td_iter}
     else:
-        if weight is not None:
-            td_iter = _weighted_triangles_and_degree_iter(G, nodes, weight)
-            clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
-                        v, d, t in td_iter}
-        else:
-            td_iter = _triangles_and_degree_iter(G, nodes)
-            clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
-                        v, d, t, _ in td_iter}
-    if nodes in G:
-        # Return the value of the sole entry in the dictionary.
-        return clusterc[nodes]
-    return clusterc
+        td_iter = _triangles_and_degree_iter(G, nodes)
+        clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
+                    v, d, t, _ in td_iter}
+    return clusterc[nodes] if nodes in G else clusterc
 
 
 def transitivity(G):
@@ -438,16 +436,13 @@ def square_clustering(G, nodes=None):
         Cycles and clustering in bipartite networks.
         Physical Review E (72) 056127.
     """
-    if nodes is None:
-        node_iter = G
-    else:
-        node_iter = G.nbunch_iter(nodes)
+    node_iter = G if nodes is None else G.nbunch_iter(nodes)
     clustering = {}
     for v in node_iter:
         clustering[v] = 0
         potential = 0
         for u, w in combinations(G[v], 2):
-            squares = len((set(G[u]) & set(G[w])) - set([v]))
+            squares = len((set(G[u]) & set(G[w])) - {v})
             clustering[v] += squares
             degm = squares + 1
             if w in G[u]:
@@ -455,10 +450,7 @@ def square_clustering(G, nodes=None):
             potential += (len(G[u]) - degm) * (len(G[w]) - degm) + squares
         if potential > 0:
             clustering[v] /= potential
-    if nodes in G:
-        # Return the value of the sole entry in the dictionary.
-        return clustering[nodes]
-    return clustering
+    return clustering[nodes] if nodes in G else clustering
 
 
 @not_implemented_for('directed')

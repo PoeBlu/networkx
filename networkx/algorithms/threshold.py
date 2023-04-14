@@ -12,7 +12,7 @@ def is_threshold_graph(G):
     """
     Returns True if G is a threshold graph.
     """
-    return is_threshold_sequence(list(d for n, d in G.degree()))
+    return is_threshold_sequence([d for n, d in G.degree()])
 
 
 def is_threshold_sequence(degree_sequence):
@@ -79,7 +79,7 @@ def creation_sequence(degree_sequence, with_labels=False, compact=False):
     while ds:
         if ds[0][0] == 0:     # isolated node
             (d, v) = ds.pop(0)
-            if len(ds) > 0:    # make sure we start with a d
+            if ds:    # make sure we start with a d
                 cs.insert(0, (v, 'i'))
             else:
                 cs.insert(0, (v, 'd'))
@@ -92,9 +92,7 @@ def creation_sequence(degree_sequence, with_labels=False, compact=False):
 
     if with_labels:
         return cs
-    if compact:
-        return make_compact(cs)
-    return [v[1] for v in cs]   # not labeled
+    return make_compact(cs) if compact else [v[1] for v in cs]
 
 
 def make_compact(creation_sequence):
@@ -149,9 +147,7 @@ def uncompact(creation_sequence):
     See creation_sequence.
     """
     first = creation_sequence[0]
-    if isinstance(first, str):    # creation sequence
-        return creation_sequence
-    elif isinstance(first, tuple):   # labeled creation sequence
+    if isinstance(first, (str, tuple)):    # creation sequence
         return creation_sequence
     elif isinstance(first, int):   # compact creation sequence
         ccscopy = creation_sequence[:]
@@ -267,9 +263,7 @@ def weights_to_creation_sequence(weights, threshold=1, with_labels=False, compac
 
     if with_labels:
         return cs
-    if compact:
-        return make_compact(cs)
-    return [v[1] for v in cs]   # not labeled
+    return make_compact(cs) if compact else [v[1] for v in cs]
 
 
 # Manipulating NetworkX.Graphs in context of threshold graphs
@@ -392,7 +386,7 @@ def triangles(creation_sequence):
     ntri = dr * (dr - 1) * (dr - 2) / 6  # number of triangles in clique of nd d's
     # now add dr choose 2 triangles for every 'i' in sequence where
     # dr is the number of d's to the right of the current i
-    for i, typ in enumerate(cs):
+    for typ in cs:
         if typ == "i":
             ntri += dr * (dr - 1) / 2
         else:
@@ -470,8 +464,7 @@ def density(creation_sequence):
     N = len(creation_sequence)
     two_size = sum(degree_sequence(creation_sequence))
     two_possible = N * (N - 1)
-    den = two_size / float(two_possible)
-    return den
+    return two_size / float(two_possible)
 
 
 def degree_correlation(creation_sequence):
@@ -504,7 +497,7 @@ def degree_correlation(creation_sequence):
     if denom == 0:
         if numer == 0:
             return 1
-        raise ValueError("Zero Denominator but Numerator is %s" % numer)
+        raise ValueError(f"Zero Denominator but Numerator is {numer}")
     return numer / float(denom)
 
 
@@ -539,9 +532,9 @@ def shortest_path(creation_sequence, u, v):
 
     verts = [s[0] for s in cs]
     if v not in verts:
-        raise ValueError("Vertex %s not in graph from creation_sequence" % v)
+        raise ValueError(f"Vertex {v} not in graph from creation_sequence")
     if u not in verts:
-        raise ValueError("Vertex %s not in graph from creation_sequence" % u)
+        raise ValueError(f"Vertex {u} not in graph from creation_sequence")
     # Done checking
     if u == v:
         return [u]
@@ -675,7 +668,7 @@ def eigenvectors(creation_sequence):
     i = 1
     dd = 1
     while dd < nn:
-        scale = 1. / sqrt(dd * dd + i)
+        scale = 1. / sqrt(dd**2 + i)
         vec[i] = i * [-scale] + [dd * scale] + [0] * (N - i - 1)
         val[i] = e
         i += 1
@@ -697,7 +690,7 @@ def eigenvectors(creation_sequence):
         i += 1
         dd = 1
         while dd < nn:
-            scale = 1. / sqrt(i - st + dd * dd)
+            scale = 1. / sqrt(i - st + dd**2)
             vec[i] = [0] * st + (i - st) * [-scale] + [dd * scale] + [0] * (N - i - 1)
             val[i] = e
             i += 1
@@ -720,9 +713,7 @@ def spectral_projection(u, eigenpairs):
     """
     coeff = []
     evect = eigenpairs[1]
-    for ev in evect:
-        c = sum([evv * uv for (evv, uv) in zip(ev, u)])
-        coeff.append(c)
+    coeff.extend(sum(evv * uv for (evv, uv) in zip(ev, u)) for ev in evect)
     return coeff
 
 
@@ -758,10 +749,7 @@ def eigenvalues(creation_sequence):
             row -= 1
         else:
             eig += 1
-            if degseq:
-                bigdeg = degseq.pop()
-            else:
-                bigdeg = 0
+            bigdeg = degseq.pop() if degseq else 0
     return eiglist
 
 
@@ -791,7 +779,7 @@ def random_threshold_sequence(n, p, seed=None):
         raise ValueError("p must be in [0,1]")
 
     cs = ['d']  # threshold sequences always start with a d
-    for i in range(1, n):
+    for _ in range(1, n):
         if seed.random() < p:
             cs.append('d')
         else:

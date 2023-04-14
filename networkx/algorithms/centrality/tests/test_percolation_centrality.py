@@ -53,7 +53,7 @@ class TestPercolationCentrality(object):
         # taken from betweenness test test_florentine_families_graph
         G = nx.florentine_families_graph()
         b_answer =\
-            {'Acciaiuoli':    0.000,
+                {'Acciaiuoli':    0.000,
              'Albizzi':       0.212,
              'Barbadori':     0.093,
              'Bischeri':      0.104,
@@ -69,12 +69,12 @@ class TestPercolationCentrality(object):
              'Strozzi':       0.103,
              'Tornabuoni':    0.092}
 
-        p_states = {k: 1.0 for k, v in b_answer.items()}
+        p_states = {k: 1.0 for k in b_answer}
         p_answer = nx.percolation_centrality(G, states=p_states)
         for n in sorted(G):
             assert almost_equal(p_answer[n], b_answer[n], places=3)
 
-        p_states = {k: 0.3 for k, v in b_answer.items()}
+        p_states = {k: 0.3 for k in b_answer}
         p_answer = nx.percolation_centrality(G, states=p_states)
         for n in sorted(G):
             assert almost_equal(p_answer[n], b_answer[n], places=3)

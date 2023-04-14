@@ -9,28 +9,17 @@ import itertools
 def is_tree_decomp(graph, decomp):
     """Check if the given tree decomposition is valid."""
     for x in graph.nodes():
-        appear_once = False
-        for bag in decomp.nodes():
-            if x in bag:
-                appear_once = True
-                break
+        appear_once = any(x in bag for bag in decomp.nodes())
         assert appear_once
 
     # Check if each connected pair of nodes are at least once together in a bag
     for (x, y) in graph.edges():
-        appear_together = False
-        for bag in decomp.nodes():
-            if x in bag and y in bag:
-                appear_together = True
-                break
+        appear_together = any(x in bag and y in bag for bag in decomp.nodes())
         assert appear_together
 
     # Check if the nodes associated with vertex v form a connected subset of T
     for v in graph.nodes():
-        subset = []
-        for bag in decomp.nodes():
-            if v in bag:
-                subset.append(bag)
+        subset = [bag for bag in decomp.nodes() if v in bag]
         sub_graph = decomp.subgraph(subset)
         assert nx.is_connected(sub_graph)
 
@@ -115,9 +104,7 @@ class TestTreewidthMinDegree(object):
 
         deg_heuristic = MinDegreeHeuristic(graph)
         node = deg_heuristic.best_node(graph)
-        if node is None:
-            pass
-        else:
+        if node is not None:
             assert False
 
     def test_empty_graph(self):
@@ -135,15 +122,17 @@ class TestTreewidthMinDegree(object):
 
     def test_heuristic_first_steps(self):
         """Test first steps of min_degree heuristic"""
-        graph = {n: set(self.deterministic_graph[n]) - set([n])
-                 for n in self.deterministic_graph}
+        graph = {
+            n: set(self.deterministic_graph[n]) - {n}
+            for n in self.deterministic_graph
+        }
         deg_heuristic = MinDegreeHeuristic(graph)
         elim_node = deg_heuristic.best_node(graph)
-        print("Graph {}:".format(graph))
+        print(f"Graph {graph}:")
         steps = []
 
         while elim_node is not None:
-            print("Removing {}:".format(elim_node))
+            print(f"Removing {elim_node}:")
             steps.append(elim_node)
             nbrs = graph[elim_node]
 
@@ -151,12 +140,12 @@ class TestTreewidthMinDegree(object):
                 if v not in graph[u]:
                     graph[u].add(v)
 
-            for u in graph:
-                if elim_node in graph[u]:
+            for u, value in graph.items():
+                if elim_node in value:
                     graph[u].remove(elim_node)
 
             del graph[elim_node]
-            print("Graph {}:".format(graph))
+            print(f"Graph {graph}:")
             elim_node = deg_heuristic.best_node(graph)
 
         # check only the first 5 elements for equality
@@ -218,9 +207,7 @@ class TestTreewidthMinFillIn(object):
                 if u != v:  # ignore self-loop
                     graph[u].add(v)
         next_node = min_fill_in_heuristic(graph)
-        if next_node is None:
-            pass
-        else:
+        if next_node is not None:
             assert False
 
     def test_empty_graph(self):
@@ -238,14 +225,16 @@ class TestTreewidthMinFillIn(object):
 
     def test_heuristic_first_steps(self):
         """Test first steps of min_fill_in heuristic"""
-        graph = {n: set(self.deterministic_graph[n]) - set([n])
-                 for n in self.deterministic_graph}
-        print("Graph {}:".format(graph))
+        graph = {
+            n: set(self.deterministic_graph[n]) - {n}
+            for n in self.deterministic_graph
+        }
+        print(f"Graph {graph}:")
         elim_node = min_fill_in_heuristic(graph)
         steps = []
 
         while elim_node is not None:
-            print("Removing {}:".format(elim_node))
+            print(f"Removing {elim_node}:")
             steps.append(elim_node)
             nbrs = graph[elim_node]
 
@@ -253,12 +242,12 @@ class TestTreewidthMinFillIn(object):
                 if v not in graph[u]:
                     graph[u].add(v)
 
-            for u in graph:
-                if elim_node in graph[u]:
+            for u, value in graph.items():
+                if elim_node in value:
                     graph[u].remove(elim_node)
 
             del graph[elim_node]
-            print("Graph {}:".format(graph))
+            print(f"Graph {graph}:")
             elim_node = min_fill_in_heuristic(graph)
 
         # check only the first 2 elements for equality

@@ -67,18 +67,11 @@ def _find_path_start(G):
     if is_eulerian(G):
         return arbitrary_element(G)
 
-    if G.is_directed():
-        v1, v2 = [v for v in G if G.in_degree(v) != G.out_degree(v)]
+    if not G.is_directed():
+        return [v for v in G if G.degree(v) % 2 != 0][0]
+    v1, v2 = [v for v in G if G.in_degree(v) != G.out_degree(v)]
         # Determines which is the 'start' node (as opposed to the 'end')
-        if G.out_degree(v1) > G.in_degree(v1):
-            return v1
-        else:
-            return v2
-
-    else:
-        # In an undirected graph randomly choose one of the possibilities
-        start = [v for v in G if G.degree(v) % 2 != 0][0]
-        return start
+    return v1 if G.out_degree(v1) > G.in_degree(v1) else v2
 
 
 def _simplegraph_eulerian_circuit(G, source):
@@ -191,10 +184,7 @@ def eulerian_circuit(G, source=None, keys=False):
     """
     if not is_eulerian(G):
         raise nx.NetworkXError("G is not Eulerian.")
-    if G.is_directed():
-        G = G.reverse()
-    else:
-        G = G.copy()
+    G = G.reverse() if G.is_directed() else G.copy()
     if source is None:
         source = arbitrary_element(G)
     if G.is_multigraph():
@@ -204,8 +194,7 @@ def eulerian_circuit(G, source=None, keys=False):
             else:
                 yield u, v
     else:
-        for u, v in _simplegraph_eulerian_circuit(G, source):
-            yield u, v
+        yield from _simplegraph_eulerian_circuit(G, source)
 
 
 def has_eulerian_path(G):
@@ -277,10 +266,7 @@ def eulerian_path(G, source=None, keys=False):
     """
     if not has_eulerian_path(G):
         raise nx.NetworkXError("Graph has no Eulerian paths.")
-    if G.is_directed():
-        G = G.reverse()
-    else:
-        G = G.copy()
+    G = G.reverse() if G.is_directed() else G.copy()
     if source is None:
         source = _find_path_start(G)
     if G.is_multigraph():
@@ -290,8 +276,7 @@ def eulerian_path(G, source=None, keys=False):
             else:
                 yield u, v
     else:
-        for u, v in _simplegraph_eulerian_circuit(G, source):
-            yield u, v
+        yield from _simplegraph_eulerian_circuit(G, source)
 
 
 @not_implemented_for('directed')
@@ -339,7 +324,7 @@ def eulerize(G):
         raise nx.NetworkXError("G is not connected")
     odd_degree_nodes = [n for n, d in G.degree() if d % 2 == 1]
     G = nx.MultiGraph(G)
-    if len(odd_degree_nodes) == 0:
+    if not odd_degree_nodes:
         return G
 
     # get all shortest paths between vertices of odd degree

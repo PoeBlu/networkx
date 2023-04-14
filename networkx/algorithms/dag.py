@@ -55,8 +55,8 @@ def descendants(G, source):
         The descendants of `source` in `G`
     """
     if not G.has_node(source):
-        raise nx.NetworkXError("The node %s is not in the graph." % source)
-    des = set(n for n, d in nx.shortest_path_length(G, source=source).items())
+        raise nx.NetworkXError(f"The node {source} is not in the graph.")
+    des = {n for n, d in nx.shortest_path_length(G, source=source).items()}
     return des - {source}
 
 
@@ -75,8 +75,8 @@ def ancestors(G, source):
         The ancestors of source in G
     """
     if not G.has_node(source):
-        raise nx.NetworkXError("The node %s is not in the graph." % source)
-    anc = set(n for n, d in nx.shortest_path_length(G, target=source).items())
+        raise nx.NetworkXError(f"The node {source} is not in the graph.")
+    anc = {n for n, d in nx.shortest_path_length(G, target=source).items()}
     return anc - {source}
 
 
@@ -347,13 +347,13 @@ def all_topological_sorts(G):
 
     # do-while construct
     while True:
-        assert all([count[v] == 0 for v in D])
+        assert all(count[v] == 0 for v in D)
 
         if len(current_sort) == len(G):
             yield list(current_sort)
 
             # clean-up stack
-            while len(current_sort) > 0:
+            while current_sort:
                 assert len(bases) == len(current_sort)
                 q = current_sort.pop()
 
@@ -402,7 +402,7 @@ def all_topological_sorts(G):
             if len(bases) < len(current_sort):
                 bases.append(q)
 
-        if len(bases) == 0:
+        if not bases:
             break
 
 
@@ -683,8 +683,7 @@ def antichains(G, topo_order=None):
         while stack:
             x = stack.pop()
             new_antichain = antichain + [x]
-            new_stack = [
-                t for t in stack if not ((t in TC[x]) or (x in TC[t]))]
+            new_stack = [t for t in stack if t not in TC[x] and x not in TC[t]]
             antichains_stacks.append((new_antichain, new_stack))
 
 
@@ -782,11 +781,7 @@ def dag_longest_path_length(G, weight='weight', default_weight=1):
     dag_longest_path
     """
     path = nx.dag_longest_path(G, weight, default_weight)
-    path_length = 0
-    for (u, v) in pairwise(path):
-        path_length += G[u][v].get(weight, default_weight)
-
-    return path_length
+    return sum(G[u][v].get(weight, default_weight) for u, v in pairwise(path))
 
 
 def root_to_leaf_paths(G):

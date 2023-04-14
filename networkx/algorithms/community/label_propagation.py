@@ -78,8 +78,9 @@ def asyn_lpa_communities(G, weight=None, seed=None):
             # algorithm asynchronous.
             label_freq = Counter()
             for v in G[node]:
-                label_freq.update({labels[v]: G.edges[node, v][weight]
-                                   if weight else 1})
+                label_freq[labels[v]] = (
+                    G.edges[node, v][weight] if weight else 1
+                )
             # Choose the label with the highest frecuency. If more than 1 label
             # has the highest frecuency choose one randomly.
             max_freq = max(label_freq.values())
@@ -134,7 +135,7 @@ def label_propagation_communities(G):
                 _update_label(n, labeling, G)
 
     for label in set(labeling.values()):
-        yield set((x for x in labeling if labeling[x] == label))
+        yield {x for x in labeling if labeling[x] == label}
 
 
 def _color_network(G):
@@ -142,13 +143,13 @@ def _color_network(G):
 
        Returns a dict keyed by color to a set of nodes with that color.
     """
-    coloring = dict()  # color => set(node)
+    coloring = {}
     colors = nx.coloring.greedy_color(G)
     for node, color in colors.items():
         if color in coloring:
             coloring[color].add(node)
         else:
-            coloring[color] = set([node])
+            coloring[color] = {node}
     return coloring
 
 

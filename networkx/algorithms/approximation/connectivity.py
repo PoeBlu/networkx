@@ -96,7 +96,7 @@ def local_node_connectivity(G, source, target, cutoff=None):
         cutoff = INF
 
     exclude = set()
-    for i in range(min(possible, cutoff)):
+    for _ in range(min(possible, cutoff)):
         try:
             path = _bidirectional_shortest_path(G, source, target, exclude)
             exclude.update(set(path))
@@ -176,9 +176,9 @@ def node_connectivity(G, s=None, t=None):
     # Local node connectivity
     if s is not None and t is not None:
         if s not in G:
-            raise nx.NetworkXError('node %s not in graph' % s)
+            raise nx.NetworkXError(f'node {s} not in graph')
         if t not in G:
-            raise nx.NetworkXError('node %s not in graph' % t)
+            raise nx.NetworkXError(f'node {t} not in graph')
         return local_node_connectivity(G, s, t)
 
     # Global node connectivity
@@ -202,7 +202,7 @@ def node_connectivity(G, s=None, t=None):
     K = minimum_degree
     # compute local node connectivity with all non-neighbors nodes
     # and store the minimum
-    for w in set(G) - set(neighbors(v)) - set([v]):
+    for w in set(G) - set(neighbors(v)) - {v}:
         K = min(K, local_node_connectivity(G, v, w, cutoff=K))
     # Same for non adjacent pairs of neighbors of v
     for x, y in iter_func(neighbors(v), 2):
@@ -254,17 +254,9 @@ def all_pairs_node_connectivity(G, nbunch=None, cutoff=None):
         Node-Independent Paths. Santa Fe Institute Working Paper #01-07-035
         http://eclectic.ss.uci.edu/~drwhite/working.pdf
     """
-    if nbunch is None:
-        nbunch = G
-    else:
-        nbunch = set(nbunch)
-
+    nbunch = G if nbunch is None else set(nbunch)
     directed = G.is_directed()
-    if directed:
-        iter_func = itertools.permutations
-    else:
-        iter_func = itertools.combinations
-
+    iter_func = itertools.permutations if directed else itertools.combinations
     all_pairs = {n: {} for n in nbunch}
 
     for u, v in iter_func(nbunch, 2):
@@ -371,7 +363,7 @@ def _bidirectional_pred_succ(G, source, target, exclude):
         # thus source and target will only trigger "found path" when they are
         # adjacent and then they can be safely included in the container 'exclude'
         level += 1
-        if not level % 2 == 0:
+        if level % 2 != 0:
             this_level = forward_fringe
             forward_fringe = []
             for v in this_level:
@@ -396,4 +388,4 @@ def _bidirectional_pred_succ(G, source, target, exclude):
                     if w in pred:
                         return pred, succ, w  # found path
 
-    raise nx.NetworkXNoPath("No path between %s and %s." % (source, target))
+    raise nx.NetworkXNoPath(f"No path between {source} and {target}.")

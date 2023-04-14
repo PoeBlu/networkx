@@ -99,10 +99,8 @@ def biadjacency_matrix(G, row_order, column_order=None,
                           shape=(nlen, mlen), dtype=dtype)
     try:
         return M.asformat(format)
-    # From Scipy 1.1.0, asformat will throw a ValueError instead of an
-    # AttributeError if the format if not recognized.
     except (AttributeError, ValueError):
-        raise nx.NetworkXError("Unknown sparse matrix format: %s" % format)
+        raise nx.NetworkXError(f"Unknown sparse matrix format: {format}")
 
 
 def from_biadjacency_matrix(A, create_using=None, edge_attribute='weight'):
@@ -156,6 +154,6 @@ def from_biadjacency_matrix(A, create_using=None, edge_attribute='weight'):
     # be the entry in the matrix.
     if A.dtype.kind in ('i', 'u') and G.is_multigraph():
         chain = itertools.chain.from_iterable
-        triples = chain(((u, v, 1) for d in range(w)) for (u, v, w) in triples)
+        triples = chain(((u, v, 1) for _ in range(w)) for (u, v, w) in triples)
     G.add_weighted_edges_from(triples, weight=edge_attribute)
     return G

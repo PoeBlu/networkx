@@ -160,17 +160,13 @@ def boykov_kolmogorov(G, s, t, capacity='capacity', residual=None,
 
 def boykov_kolmogorov_impl(G, s, t, capacity, residual, cutoff):
     if s not in G:
-        raise nx.NetworkXError('node %s not in graph' % str(s))
+        raise nx.NetworkXError(f'node {str(s)} not in graph')
     if t not in G:
-        raise nx.NetworkXError('node %s not in graph' % str(t))
+        raise nx.NetworkXError(f'node {str(t)} not in graph')
     if s == t:
         raise nx.NetworkXError('source and sink are the same node')
 
-    if residual is None:
-        R = build_residual_network(G, capacity)
-    else:
-        R = residual
-
+    R = build_residual_network(G, capacity) if residual is None else residual
     # Initialize/reset the residual network.
     # This is way too slow
     # nx.set_edge_attributes(R, 0, 'flow')
@@ -292,19 +288,19 @@ def boykov_kolmogorov_impl(G, s, t, capacity, residual, cutoff):
             nbrs = ((n, attr, dist[n]) for n, attr in neighbors[u].items()
                     if n in tree)
             for v, attr, d in sorted(nbrs, key=itemgetter(2)):
-                if attr['capacity'] - attr['flow'] > 0:
-                    if _has_valid_root(v, tree):
-                        tree[u] = v
-                        dist[u] = dist[v] + 1
-                        timestamp[u] = time
-                        break
+                if attr['capacity'] - attr['flow'] > 0 and _has_valid_root(
+                    v, tree
+                ):
+                    tree[u] = v
+                    dist[u] = dist[v] + 1
+                    timestamp[u] = time
+                    break
             else:
                 nbrs = ((n, attr, dist[n]) for n, attr in neighbors[u].items()
                         if n in tree)
                 for v, attr, d in sorted(nbrs, key=itemgetter(2)):
-                    if attr['capacity'] - attr['flow'] > 0:
-                        if v not in active:
-                            active.append(v)
+                    if attr['capacity'] - attr['flow'] > 0 and v not in active:
+                        active.append(v)
                     if tree[v] == u:
                         tree[v] = None
                         orphans.appendleft(v)
@@ -317,7 +313,7 @@ def boykov_kolmogorov_impl(G, s, t, capacity, residual, cutoff):
         v = n
         while v is not None:
             path.append(v)
-            if v == s or v == t:
+            if v in [s, t]:
                 base_dist = 0
                 break
             elif timestamp[v] == time:

@@ -75,9 +75,7 @@ def is_biconnected(G):
 
     """
     bcc = list(biconnected_components(G))
-    if len(bcc) == 1:
-        return len(bcc[0]) == len(G)
-    return False  # Multiple bicomponents or No bicomponents (empty graph?)
+    return len(bcc[0]) == len(G) if len(bcc) == 1 else False
 #    if len(bcc) == 0:  # No bicomponents (it could be an empty graph)
 #        return False
 #    return len(bcc[0]) == len(G)
@@ -152,8 +150,7 @@ def biconnected_component_edges(G):
            Communications of the ACM 16: 372–378. doi:10.1145/362248.362272
 
     """
-    for comp in _biconnected_dfs(G, components=True):
-        yield comp
+    yield from _biconnected_dfs(G, components=True)
 
 
 @not_implemented_for('directed')
@@ -373,7 +370,5 @@ def _biconnected_dfs(G, components=True):
                     if components:
                         ind = edge_stack.index((grandparent, parent))
                         yield edge_stack[ind:]
-        if not components:
-            # root node is articulation point if it has more than 1 child
-            if root_children > 1:
-                yield start
+        if not components and root_children > 1:
+            yield start

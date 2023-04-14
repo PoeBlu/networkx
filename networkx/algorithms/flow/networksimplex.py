@@ -193,10 +193,7 @@ def network_simplex(G, demand='demand', capacity='capacity', weight='weight'):
     U = []  # edge capacities
     C = []  # edge weights
 
-    if not multigraph:
-        edges = G.edges(data=True)
-    else:
-        edges = G.edges(data=True, keys=True)
+    edges = G.edges(data=True, keys=True) if multigraph else G.edges(data=True)
     edges = (e for e in edges
              if e[0] != e[1] and e[-1].get(capacity, inf) != 0)
     for i, e in enumerate(edges):
@@ -211,10 +208,11 @@ def network_simplex(G, demand='demand', capacity='capacity', weight='weight'):
     for e, c in zip(E, C):
         if abs(c) == inf:
             raise nx.NetworkXError('edge %r has infinite weight' % (e,))
-    if not multigraph:
-        edges = nx.selfloop_edges(G, data=True)
-    else:
-        edges = nx.selfloop_edges(G, data=True, keys=True)
+    edges = (
+        nx.selfloop_edges(G, data=True, keys=True)
+        if multigraph
+        else nx.selfloop_edges(G, data=True)
+    )
     for e in edges:
         if abs(e[-1].get(weight, 0)) == inf:
             raise nx.NetworkXError('edge %r has infinite weight' % (e[:-1],))
@@ -228,10 +226,11 @@ def network_simplex(G, demand='demand', capacity='capacity', weight='weight'):
     for e, u in zip(E, U):
         if u < 0:
             raise nx.NetworkXUnfeasible('edge %r has negative capacity' % (e,))
-    if not multigraph:
-        edges = nx.selfloop_edges(G, data=True)
-    else:
-        edges = nx.selfloop_edges(G, data=True, keys=True)
+    edges = (
+        nx.selfloop_edges(G, data=True, keys=True)
+        if multigraph
+        else nx.selfloop_edges(G, data=True)
+    )
     for e in edges:
         if e[-1].get(capacity, inf) < 0:
             raise nx.NetworkXUnfeasible(
@@ -324,8 +323,6 @@ def network_simplex(G, demand='demand', capacity='capacity', weight='weight'):
                     q = S[i]
                 yield i, p, q
                 m = 0
-        # All edges have nonnegative reduced costs. The current flow is
-        # optimal.
 
     def find_apex(p, q):
         """Find the lowest common ancestor of nodes p and q in the spanning
@@ -499,10 +496,7 @@ def network_simplex(G, demand='demand', capacity='capacity', weight='weight'):
         """Update the potentials of the nodes in the subtree rooted at a node
         q connected to its parent p by an edge i.
         """
-        if q == T[i]:
-            d = pi[p] - C[i] - pi[q]
-        else:
-            d = pi[p] + C[i] - pi[q]
+        d = pi[p] - C[i] - pi[q] if q == T[i] else pi[p] + C[i] - pi[q]
         for q in trace_subtree(q):
             pi[q] += d
 

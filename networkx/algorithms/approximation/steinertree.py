@@ -86,5 +86,4 @@ def steiner_tree(G, terminal_nodes, weight='weight'):
     mst_edges = nx.minimum_spanning_edges(H, weight='distance', data=True)
     # Create an iterator over each edge in each shortest path; repeats are okay
     edges = chain.from_iterable(pairwise(d['path']) for u, v, d in mst_edges)
-    T = G.edge_subgraph(edges)
-    return T
+    return G.edge_subgraph(edges)

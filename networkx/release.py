@@ -72,17 +72,16 @@ vcs_info = %(vcs_info)r
     date, date_info, version, version_info, vcs_info = get_info(dynamic=True)
 
     def writefile():
-        fh = open(versionfile, 'w')
-        subs = {
-            'dev': dev,
-            'version': version,
-            'version_info': version_info,
-            'date': date,
-            'date_info': date_info,
-            'vcs_info': vcs_info
-        }
-        fh.write(text % subs)
-        fh.close()
+        with open(versionfile, 'w') as fh:
+            subs = {
+                'dev': dev,
+                'version': version,
+                'version_info': version_info,
+                'date': date,
+                'date_info': date_info,
+                'vcs_info': vcs_info
+            }
+            fh.write(text % subs)
 
     if vcs_info[0] == 'mercurial':
         # Then, we want to update version.py.

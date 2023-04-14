@@ -75,7 +75,7 @@ def cycle_basis(G, root=None):
                 if nbr not in used:   # new node
                     pred[nbr] = z
                     stack.append(nbr)
-                    used[nbr] = set([z])
+                    used[nbr] = {z}
                 elif nbr == z:          # self loops
                     cycles.append([z])
                 elif nbr not in zused:  # found a cycle
@@ -155,7 +155,7 @@ def simple_cycles(G):
     cycle_basis
     """
     def _unblock(thisnode, blocked, B):
-        stack = set([thisnode])
+        stack = {thisnode}
         while stack:
             node = stack.pop()
             if node in blocked:
@@ -410,9 +410,7 @@ def find_cycle(G, source=None, orientation=None):
             return edge[1], edge[0]
     elif orientation == 'ignore':
         def tailhead(edge):
-            if edge[-1] == 'reverse':
-                return edge[1], edge[0]
-            return edge[:2]
+            return (edge[1], edge[0]) if edge[-1] == 'reverse' else edge[:2]
 
     explored = set()
     cycle = []
@@ -475,7 +473,7 @@ def find_cycle(G, source=None, orientation=None):
             explored.update(seen)
 
     else:
-        assert(len(cycle) == 0)
+        assert not cycle
         raise nx.exception.NetworkXNoCycle('No cycle found.')
 
     # We now have a list of edges which ends on a cycle.
@@ -545,7 +543,7 @@ def _min_cycle_basis(comp, weight):
     N = len(edges_excl)
 
     # We maintain a set of vectors orthogonal to sofar found cycles
-    set_orth = [set([edge]) for edge in edges_excl]
+    set_orth = [{edge} for edge in edges_excl]
     for k in range(N):
         # kth cycle is "parallel" to kth vector in set_orth
         new_cycle = _min_cycle(comp, set_orth[k], weight=weight)

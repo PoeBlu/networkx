@@ -67,7 +67,7 @@ def asyn_fluidc(G, k, max_iter=100, seed=None):
     # Initial checks
     if not isinstance(k, int):
         raise NetworkXError("k must be an integer.")
-    if not k > 0:
+    if k <= 0:
         raise NetworkXError("k must be greater than 0.")
     if not is_connected(G):
         raise NetworkXError("Fluid Communities require connected Graphs.")
@@ -80,7 +80,7 @@ def asyn_fluidc(G, k, max_iter=100, seed=None):
     communities = {n: i for i, n in enumerate(vertices[:k])}
     density = {}
     com_to_numvertices = {}
-    for vertex in communities.keys():
+    for vertex in communities:
         com_to_numvertices[communities[vertex]] = 1
         density[communities[vertex]] = max_density
     # Set up control variables and start iterating
@@ -97,15 +97,13 @@ def asyn_fluidc(G, k, max_iter=100, seed=None):
             com_counter = Counter()
             # Take into account self vertex community
             try:
-                com_counter.update({communities[vertex]:
-                                    density[communities[vertex]]})
+                com_counter[communities[vertex]] = density[communities[vertex]]
             except KeyError:
                 pass
             # Gather neighbour vertex communities
             for v in G[vertex]:
                 try:
-                    com_counter.update({communities[v]:
-                                        density[communities[v]]})
+                    com_counter[communities[v]] = density[communities[v]]
                 except KeyError:
                     continue
             # Check which is the community with highest density

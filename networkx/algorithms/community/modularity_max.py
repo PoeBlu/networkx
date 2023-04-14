@@ -49,19 +49,19 @@ def greedy_modularity_communities(G, weight=None):
 
     # Count nodes and edges
     N = len(G.nodes())
-    m = sum([d.get('weight', 1) for u, v, d in G.edges(data=True)])
+    m = sum(d.get('weight', 1) for u, v, d in G.edges(data=True))
     q0 = 1.0 / (2.0*m)
 
     # Map node labels to contiguous integers
-    label_for_node = dict((i, v) for i, v in enumerate(G.nodes()))
-    node_for_label = dict((label_for_node[i], i) for i in range(N))
+    label_for_node = dict(enumerate(G.nodes()))
+    node_for_label = {label_for_node[i]: i for i in range(N)}
 
     # Calculate degrees
     k_for_label = G.degree(G.nodes(), weight=weight)
     k = [k_for_label[label_for_node[i]] for i in range(N)]
 
     # Initialize community and merge lists
-    communities = dict((i, frozenset([i])) for i in range(N))
+    communities = {i: frozenset([i]) for i in range(N)}
     merges = []
 
     # Initial modularity
@@ -75,14 +75,16 @@ def greedy_modularity_communities(G, weight=None):
     # dq_heap[i][n] : (-dq, i, j) for communitiy i nth largest dQ
     # H[n]: (-dq, i, j) for community with nth largest max_j(dQ_ij)
     a = [k[i]*q0 for i in range(N)]
-    dq_dict = dict(
-        (i, dict(
-            (j, 2*q0 - 2*k[i]*k[j]*q0*q0)
+    dq_dict = {
+        i: {
+            j: 2 * q0 - 2 * k[i] * k[j] * q0 * q0
             for j in [
-                node_for_label[u]
-                for u in G.neighbors(label_for_node[i])]
-            if j != i))
-        for i in range(N))
+                node_for_label[u] for u in G.neighbors(label_for_node[i])
+            ]
+            if j != i
+        }
+        for i in range(N)
+    }
     dq_heap = [
         MappedQueue([
             (-dq, i, j)
@@ -133,7 +135,7 @@ def greedy_modularity_communities(G, weight=None):
         # Get list of communities connected to merged communities
         i_set = set(dq_dict[i].keys())
         j_set = set(dq_dict[j].keys())
-        all_set = (i_set | j_set) - set([i, j])
+        all_set = (i_set | j_set) - {i, j}
         both_set = i_set & j_set
         # Merge i into j and update dQ
         for k in all_set:
@@ -148,17 +150,11 @@ def greedy_modularity_communities(G, weight=None):
             # Update rows j and k
             for row, col in [(j, k), (k, j)]:
                 # Save old value for finding heap index
-                if k in j_set:
-                    d_old = (-dq_dict[row][col], row, col)
-                else:
-                    d_old = None
+                d_old = (-dq_dict[row][col], row, col) if k in j_set else None
                 # Update dict for j,k only (i is removed below)
                 dq_dict[row][col] = dq_jk
                 # Save old max of per-row heap
-                if len(dq_heap[row]) > 0:
-                    d_oldmax = dq_heap[row].h[0]
-                else:
-                    d_oldmax = None
+                d_oldmax = dq_heap[row].h[0] if len(dq_heap[row]) > 0 else None
                 # Add/update heaps
                 d = (-dq_jk, row, col)
                 if d_old is None:
@@ -171,10 +167,8 @@ def greedy_modularity_communities(G, weight=None):
                 if d_oldmax is None:
                     # No entries previously in this row, push new max
                     H.push(d)
-                else:
-                    # We've updated an entry in this row, has the max changed?
-                    if dq_heap[row].h[0] != d_oldmax:
-                        H.update(d_oldmax, dq_heap[row].h[0])
+                elif dq_heap[row].h[0] != d_oldmax:
+                    H.update(d_oldmax, dq_heap[row].h[0])
 
         # Remove row/col i from matrix
         i_neighbors = dq_dict[i].keys()
@@ -207,8 +201,8 @@ def greedy_modularity_communities(G, weight=None):
         a[i] = 0
 
     communities = [
-        frozenset([label_for_node[i] for i in c])
-        for c in communities.values()]
+        frozenset(label_for_node[i] for i in c) for c in communities.values()
+    ]
     return sorted(communities, key=len, reverse=True)
 
 
@@ -218,7 +212,7 @@ def _naive_greedy_modularity_communities(G):
     provided as an easy-to-understand reference implementation.
     """
     # First create one community for each node
-    communities = list([frozenset([u]) for u in G.nodes()])
+    communities = [frozenset([u]) for u in G.nodes()]
     # Track merges
     merges = []
     # Greedily merge communities until no improvement is possible
@@ -264,5 +258,4 @@ def _naive_greedy_modularity_communities(G):
             communities[i] = frozenset([])
     # Remove empty communities and sort
     communities = [c for c in communities if len(c) > 0]
-    for com in sorted(communities, key=lambda x: len(x), reverse=True):
-        yield com
+    yield from sorted(communities, key=lambda x: len(x), reverse=True)

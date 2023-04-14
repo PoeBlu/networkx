@@ -9,16 +9,17 @@ Also shows creative use of the Heavy Metal Umlaut:
 https://en.wikipedia.org/wiki/Heavy_metal_umlaut
 """
 
+
 import matplotlib.pyplot as plt
 import networkx as nx
 
-hd = "H" + chr(252) + "sker D" + chr(252)
-mh = "Mot" + chr(246) + "rhead"
-mc = "M" + chr(246) + "tley Cr" + chr(252) + "e"
-st = "Sp" + chr(305) + "n" + chr(776) + "al Tap"
-q = "Queensr" + chr(255) + "che"
-boc = "Blue " + chr(214) + "yster Cult"
-dt = "Deatht" + chr(246) + "ngue"
+hd = f"H{chr(252)}sker D{chr(252)}"
+mh = f"Mot{chr(246)}rhead"
+mc = f"M{chr(246)}tley Cr{chr(252)}e"
+st = f"Sp{chr(305)}n{chr(776)}al Tap"
+q = f"Queensr{chr(255)}che"
+boc = f"Blue {chr(214)}yster Cult"
+dt = f"Deatht{chr(246)}ngue"
 
 G = nx.Graph()
 G.add_edge(hd, mh)

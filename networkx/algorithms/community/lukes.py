@@ -74,19 +74,17 @@ def lukes_partitioning(G,
        IBM Journal of Research and Development, 18(3), 217–224.
 
     """
-    # First sanity check and tree preparation
     if not nx.is_tree(G):
         raise nx.NotATree('lukes_partitioning works only on trees')
+    if nx.is_directed(G):
+        root = [n for n, d in G.in_degree() if d == 0]
+        assert len(root) == 1
+        root = root[0]
+        t_G = deepcopy(G)
     else:
-        if nx.is_directed(G):
-            root = [n for n, d in G.in_degree() if d == 0]
-            assert len(root) == 1
-            root = root[0]
-            t_G = deepcopy(G)
-        else:
-            root = choice(list(G.nodes))
-            # this has the desirable side effect of not inheriting attributes
-            t_G = nx.dfs_tree(G, root)
+        root = choice(list(G.nodes))
+        # this has the desirable side effect of not inheriting attributes
+        t_G = nx.dfs_tree(G, root)
 
     # Since we do not want to screw up the original graph,
     # if we have a blank attribute, we make a deepcopy
@@ -128,21 +126,21 @@ def lukes_partitioning(G,
     def _a_parent_of_leaves_only(gr):
         tleaves = set(_leaves(gr))
         for n in set(gr.nodes) - tleaves:
-            if all([x in tleaves for x in nx.descendants(gr, n)]):
+            if all(x in tleaves for x in nx.descendants(gr, n)):
                 return n
 
     @lru_cache(CLUSTER_EVAL_CACHE_SIZE)
     def _value_of_cluster(cluster: frozenset):
         valid_edges = [e for e in safe_G.edges
                        if e[0] in cluster and e[1] in cluster]
-        return sum([safe_G.edges[e][edge_weight] for e in valid_edges])
+        return sum(safe_G.edges[e][edge_weight] for e in valid_edges)
 
     def _value_of_partition(partition: list):
-        return sum([_value_of_cluster(frozenset(c)) for c in partition])
+        return sum(_value_of_cluster(frozenset(c)) for c in partition)
 
     @lru_cache(CLUSTER_EVAL_CACHE_SIZE)
     def _weight_of_cluster(cluster: frozenset):
-        return sum([safe_G.nodes[n][node_weight] for n in cluster])
+        return sum(safe_G.nodes[n][node_weight] for n in cluster)
 
     def _pivot(partition: list, node):
         ccx = [c for c in partition if node in c]
@@ -171,13 +169,13 @@ def lukes_partitioning(G,
     # INITIALIZATION -----------------------
     leaves = set(_leaves(t_G))
     for lv in leaves:
-        t_G.nodes[lv][PKEY] = dict()
+        t_G.nodes[lv][PKEY] = {}
         slot = safe_G.nodes[lv][node_weight]
         t_G.nodes[lv][PKEY][slot] = [{lv}]
         t_G.nodes[lv][PKEY][0] = [{lv}]
 
     for inner in [x for x in t_G.nodes if x not in leaves]:
-        t_G.nodes[inner][PKEY] = dict()
+        t_G.nodes[inner][PKEY] = {}
         slot = safe_G.nodes[inner][node_weight]
         t_G.nodes[inner][PKEY][slot] = [{inner}]
 
@@ -187,7 +185,7 @@ def lukes_partitioning(G,
         weight_of_x = safe_G.nodes[x_node][node_weight]
         best_value = 0
         best_partition = None
-        bp_buffer = dict()
+        bp_buffer = {}
         x_descendants = nx.descendants(t_G, x_node)
         for i_node in x_descendants:
             for j in range(weight_of_x, max_size + 1):

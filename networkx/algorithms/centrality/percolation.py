@@ -91,10 +91,7 @@ def percolation_centrality(G, attribute='percolation',
 
     for s in nodes:
         # single source shortest paths
-        if weight is None:  # use BFS
-            S, P, sigma = shortest_path(G, s)
-        else:  # use Dijkstra's algorithm
-            S, P, sigma = dijkstra(G, s, weight)
+        S, P, sigma = shortest_path(G, s) if weight is None else dijkstra(G, s, weight)
         # accumulation
         percolation = _accumulate_percolation(percolation, G, S, P, sigma, s,
                                               states, p_sigma_x_t)

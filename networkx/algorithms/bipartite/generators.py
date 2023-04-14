@@ -56,7 +56,7 @@ def complete_bipartite_graph(n1, n2, create_using=None):
     G.add_nodes_from(top, bipartite=0)
     G.add_nodes_from(bottom, bipartite=1)
     G.add_edges_from((u, v) for u in top for v in bottom)
-    G.graph['name'] = "complete_bipartite_graph(%s,%s)" % (n1, n2)
+    G.graph['name'] = f"complete_bipartite_graph({n1},{n2})"
     return G
 
 
@@ -104,10 +104,10 @@ def configuration_model(aseq, bseq, create_using=None, seed=None):
     suma = sum(aseq)
     sumb = sum(bseq)
 
-    if not suma == sumb:
+    if suma != sumb:
         raise nx.NetworkXError(
-            'invalid degree sequences, sum(aseq)!=sum(bseq),%s,%s'
-            % (suma, sumb))
+            f'invalid degree sequences, sum(aseq)!=sum(bseq),{suma},{sumb}'
+        )
 
     G = _add_nodes_with_bipartite_label(G, lena, lenb)
 
@@ -115,8 +115,7 @@ def configuration_model(aseq, bseq, create_using=None, seed=None):
         return G  # done if no edges
 
     # build lists of degree-repeated vertex numbers
-    stubs = []
-    stubs.extend([[v] * aseq[v] for v in range(0, lena)])
+    stubs = [[v] * aseq[v] for v in range(lena)]
     astubs = []
     astubs = [x for subseq in stubs for x in subseq]
 
@@ -178,10 +177,10 @@ def havel_hakimi_graph(aseq, bseq, create_using=None):
     suma = sum(aseq)
     sumb = sum(bseq)
 
-    if not suma == sumb:
+    if suma != sumb:
         raise nx.NetworkXError(
-            'invalid degree sequences, sum(aseq)!=sum(bseq),%s,%s'
-            % (suma, sumb))
+            f'invalid degree sequences, sum(aseq)!=sum(bseq),{suma},{sumb}'
+        )
 
     G = _add_nodes_with_bipartite_label(G, naseq, nbseq)
 
@@ -189,7 +188,7 @@ def havel_hakimi_graph(aseq, bseq, create_using=None):
         return G  # done if no edges
 
     # build list of degree-repeated vertex numbers
-    astubs = [[aseq[v], v] for v in range(0, naseq)]
+    astubs = [[aseq[v], v] for v in range(naseq)]
     bstubs = [[bseq[v - naseq], v] for v in range(naseq, naseq + nbseq)]
     astubs.sort()
     while astubs:
@@ -251,10 +250,10 @@ def reverse_havel_hakimi_graph(aseq, bseq, create_using=None):
     suma = sum(aseq)
     sumb = sum(bseq)
 
-    if not suma == sumb:
+    if suma != sumb:
         raise nx.NetworkXError(
-            'invalid degree sequences, sum(aseq)!=sum(bseq),%s,%s'
-            % (suma, sumb))
+            f'invalid degree sequences, sum(aseq)!=sum(bseq),{suma},{sumb}'
+        )
 
     G = _add_nodes_with_bipartite_label(G, lena, lenb)
 
@@ -262,7 +261,7 @@ def reverse_havel_hakimi_graph(aseq, bseq, create_using=None):
         return G  # done if no edges
 
     # build list of degree-repeated vertex numbers
-    astubs = [[aseq[v], v] for v in range(0, lena)]
+    astubs = [[aseq[v], v] for v in range(lena)]
     bstubs = [[bseq[v - lena], v] for v in range(lena, lena + lenb)]
     astubs.sort()
     bstubs.sort()
@@ -271,7 +270,7 @@ def reverse_havel_hakimi_graph(aseq, bseq, create_using=None):
         if degree == 0:
             break  # done, all are zero
         # connect the source to the smallest degree nodes in the b set
-        for target in bstubs[0:degree]:
+        for target in bstubs[:degree]:
             v = target[1]
             G.add_edge(u, v)
             target[0] -= 1  # note this updates bstubs too.
@@ -325,17 +324,17 @@ def alternating_havel_hakimi_graph(aseq, bseq, create_using=None):
     suma = sum(aseq)
     sumb = sum(bseq)
 
-    if not suma == sumb:
+    if suma != sumb:
         raise nx.NetworkXError(
-            'invalid degree sequences, sum(aseq)!=sum(bseq),%s,%s'
-            % (suma, sumb))
+            f'invalid degree sequences, sum(aseq)!=sum(bseq),{suma},{sumb}'
+        )
 
     G = _add_nodes_with_bipartite_label(G, naseq, nbseq)
 
     if len(aseq) == 0 or max(aseq) == 0:
         return G  # done if no edges
     # build list of degree-repeated vertex numbers
-    astubs = [[aseq[v], v] for v in range(0, naseq)]
+    astubs = [[aseq[v], v] for v in range(naseq)]
     bstubs = [[bseq[v - naseq], v] for v in range(naseq, naseq + nbseq)]
     while astubs:
         astubs.sort()
@@ -343,7 +342,7 @@ def alternating_havel_hakimi_graph(aseq, bseq, create_using=None):
         if degree == 0:
             break  # done, all are zero
         bstubs.sort()
-        small = bstubs[0:degree // 2]  # add these low degree targets
+        small = bstubs[:degree // 2]
         large = bstubs[(-degree + degree // 2):]  # now high degree targets
         stubs = [x for z in zip(large, small) for x in z]  # combine, sorry
         if len(stubs) < len(small) + len(large):  # check for zip truncation
@@ -404,27 +403,25 @@ def preferential_attachment_graph(aseq, p, create_using=None, seed=None):
         raise nx.NetworkXError("Directed Graph not supported")
 
     if p > 1:
-        raise nx.NetworkXError("probability %s > 1" % (p))
+        raise nx.NetworkXError(f"probability {p} > 1")
 
     naseq = len(aseq)
     G = _add_nodes_with_bipartite_label(G, naseq, 0)
-    vv = [[v] * aseq[v] for v in range(0, naseq)]
+    vv = [[v] * aseq[v] for v in range(naseq)]
     while vv:
         while vv[0]:
             source = vv[0][0]
             vv[0].remove(source)
             if seed.random() < p or len(G) == naseq:
                 target = len(G)
-                G.add_node(target, bipartite=1)
-                G.add_edge(source, target)
             else:
                 bb = [[b] * G.degree(b) for b in range(naseq, len(G))]
                 # flatten the list of lists into a list.
                 bbstubs = reduce(lambda x, y: x + y, bb)
                 # choose preferentially a bottom node.
                 target = seed.choice(bbstubs)
-                G.add_node(target, bipartite=1)
-                G.add_edge(source, target)
+            G.add_node(target, bipartite=1)
+            G.add_edge(source, target)
         vv.remove(vv[0])
     G.name = "bipartite_preferential_attachment_model"
     return G
@@ -479,7 +476,7 @@ def random_graph(n, m, p, seed=None, directed=False):
     G = _add_nodes_with_bipartite_label(G, n, m)
     if directed:
         G = nx.DiGraph(G)
-    G.name = "fast_gnp_random_graph(%s,%s,%s)" % (n, m, p)
+    G.name = f"fast_gnp_random_graph({n},{m},{p})"
 
     if p <= 0:
         return G
@@ -495,7 +492,7 @@ def random_graph(n, m, p, seed=None, directed=False):
         w = w + 1 + int(lr / lp)
         while w >= m and v < n:
             w = w - m
-            v = v + 1
+            v += 1
         if v < n:
             G.add_edge(v, n + w)
 
@@ -509,7 +506,7 @@ def random_graph(n, m, p, seed=None, directed=False):
             w = w + 1 + int(lr / lp)
             while w >= m and v < n:
                 w = w - m
-                v = v + 1
+                v += 1
             if v < n:
                 G.add_edge(n + w, v)
 
@@ -564,7 +561,7 @@ def gnmk_random_graph(n, m, k, seed=None, directed=False):
     G = _add_nodes_with_bipartite_label(G, n, m)
     if directed:
         G = nx.DiGraph(G)
-    G.name = "bipartite_gnm_random_graph(%s,%s,%s)" % (n, m, k)
+    G.name = f"bipartite_gnm_random_graph({n},{m},{k})"
     if n == 1 or m == 1:
         return G
     max_edges = n * m  # max_edges for bipartite networks
@@ -580,15 +577,15 @@ def gnmk_random_graph(n, m, k, seed=None, directed=False):
         v = seed.choice(bottom)
         if v in G[u]:
             continue
-        else:
-            G.add_edge(u, v)
-            edge_count += 1
+        G.add_edge(u, v)
+        edge_count += 1
     return G
 
 
 def _add_nodes_with_bipartite_label(G, lena, lenb):
-    G.add_nodes_from(range(0, lena + lenb))
-    b = dict(zip(range(0, lena), [0] * lena))
-    b.update(dict(zip(range(lena, lena + lenb), [1] * lenb)))
+    G.add_nodes_from(range(lena + lenb))
+    b = dict(zip(range(lena), [0] * lena)) | zip(
+        range(lena, lena + lenb), [1] * lenb
+    )
     nx.set_node_attributes(G, b, 'bipartite')
     return G

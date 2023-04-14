@@ -73,9 +73,7 @@ def subgraph_centrality_exp(G):
     # convert to 0-1 matrix
     A[A != 0.0] = 1
     expA = scipy.linalg.expm(A)
-    # convert diagonal to dictionary keyed by node
-    sc = dict(zip(nodelist, map(float, expA.diagonal())))
-    return sc
+    return dict(zip(nodelist, map(float, expA.diagonal())))
 
 
 @not_implemented_for('directed')
@@ -148,9 +146,7 @@ def subgraph_centrality(G):
     vsquare = numpy.array(v)**2
     expw = numpy.exp(w)
     xg = numpy.dot(vsquare, expw)
-    # convert vector dictionary keyed by node
-    sc = dict(zip(nodelist, map(float, xg)))
-    return sc
+    return dict(zip(nodelist, map(float, xg)))
 
 
 @not_implemented_for('directed')
@@ -253,10 +249,7 @@ def _rescale(cbc, normalized):
     # helper to rescale betweenness centrality
     if normalized is True:
         order = len(cbc)
-        if order <= 2:
-            scale = None
-        else:
-            scale = 1.0 / ((order - 1.0)**2 - (order - 1.0))
+        scale = None if order <= 2 else 1.0 / ((order - 1.0)**2 - (order - 1.0))
     if scale is not None:
         for v in cbc:
             cbc[v] *= scale

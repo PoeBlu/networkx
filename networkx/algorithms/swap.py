@@ -86,8 +86,10 @@ def double_edge_swap(G, nswap=1, max_tries=100, seed=None):
             G.remove_edge(x, y)
             swapcount += 1
         if n >= max_tries:
-            e = ('Maximum number of swap attempts (%s) exceeded ' % n +
-                 'before desired swaps achieved (%s).' % nswap)
+            e = (
+                f'Maximum number of swap attempts ({n}) exceeded '
+                + f'before desired swaps achieved ({nswap}).'
+            )
             raise nx.NetworkXAlgorithmError(e)
         n += 1
     return G
@@ -170,8 +172,8 @@ def connected_double_edge_swap(G, nswap=1, _window_threshold=3, seed=None):
     swapcount = 0
     deg = G.degree()
     # Label key for nodes
-    dk = list(n for n, d in G.degree())
-    cdf = nx.utils.cumulative_distribution(list(d for n, d in G.degree()))
+    dk = [n for n, d in G.degree()]
+    cdf = nx.utils.cumulative_distribution([d for n, d in G.degree()])
     discrete_sequence = nx.utils.discrete_sequence
     window = 1
     while n < nswap:

@@ -96,10 +96,7 @@ def betweenness_centrality_subset(G, sources, targets, normalized=False,
     b = dict.fromkeys(G, 0.0)  # b[v]=0 for v in G
     for s in sources:
         # single source shortest paths
-        if weight is None:  # use BFS
-            S, P, sigma = shortest_path(G, s)
-        else:  # use Dijkstra's algorithm
-            S, P, sigma = dijkstra(G, s, weight)
+        S, P, sigma = shortest_path(G, s) if weight is None else dijkstra(G, s, weight)
         b = _accumulate_subset(b, S, P, sigma, s, targets)
     b = _rescale(b, len(G), normalized=normalized, directed=G.is_directed())
     return b
@@ -175,10 +172,7 @@ def edge_betweenness_centrality_subset(G, sources, targets, normalized=False,
     b.update(dict.fromkeys(G.edges(), 0.0))  # b[e] for e in G.edges()
     for s in sources:
         # single source shortest paths
-        if weight is None:  # use BFS
-            S, P, sigma = shortest_path(G, s)
-        else:  # use Dijkstra's algorithm
-            S, P, sigma = dijkstra(G, s, weight)
+        S, P, sigma = shortest_path(G, s) if weight is None else dijkstra(G, s, weight)
         b = _accumulate_edges_subset(b, S, P, sigma, s, targets)
     for n in G:  # remove nodes to only return edges
         del b[n]
@@ -201,10 +195,7 @@ def _accumulate_subset(betweenness, S, P, sigma, s, targets):
     target_set = set(targets) - {s}
     while S:
         w = S.pop()
-        if w in target_set:
-            coeff = (delta[w] + 1.0) / sigma[w]
-        else:
-            coeff = delta[w] / sigma[w]
+        coeff = (delta[w] + 1.0) / sigma[w] if w in target_set else delta[w] / sigma[w]
         for v in P[w]:
             delta[v] += sigma[v] * coeff
         if w != s:
@@ -235,16 +226,12 @@ def _accumulate_edges_subset(betweenness, S, P, sigma, s, targets):
 
 def _rescale(betweenness, n, normalized, directed=False):
     """betweenness_centrality_subset helper."""
-    if normalized:
-        if n <= 2:
-            scale = None  # no normalization b=0 for all nodes
-        else:
-            scale = 1.0 / ((n - 1) * (n - 2))
-    else:  # rescale by 2 for undirected graphs
-        if not directed:
-            scale = 0.5
-        else:
-            scale = None
+    if normalized and n <= 2 or not normalized and directed:
+        scale = None  # no normalization b=0 for all nodes
+    elif normalized:
+        scale = 1.0 / ((n - 1) * (n - 2))
+    else:
+        scale = 0.5
     if scale is not None:
         for v in betweenness:
             betweenness[v] *= scale
@@ -253,16 +240,12 @@ def _rescale(betweenness, n, normalized, directed=False):
 
 def _rescale_e(betweenness, n, normalized, directed=False):
     """edge_betweenness_centrality_subset helper."""
-    if normalized:
-        if n <= 1:
-            scale = None  # no normalization b=0 for all nodes
-        else:
-            scale = 1.0 / (n * (n - 1))
-    else:  # rescale by 2 for undirected graphs
-        if not directed:
-            scale = 0.5
-        else:
-            scale = None
+    if normalized and n <= 1 or not normalized and directed:
+        scale = None  # no normalization b=0 for all nodes
+    elif normalized:
+        scale = 1.0 / (n * (n - 1))
+    else:
+        scale = 0.5
     if scale is not None:
         for v in betweenness:
             betweenness[v] *= scale

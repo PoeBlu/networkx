@@ -236,8 +236,7 @@ def to_pandas_edgelist(G, source='source', target='target', nodelist=None,
     all_keys = set().union(*(d.keys() for s, t, d in edgelist))
     edge_attr = {k: [d.get(k, float("nan")) for s, t, d in edgelist]
                  for k in all_keys}
-    edgelistdict = {source: source_nodes, target: target_nodes}
-    edgelistdict.update(edge_attr)
+    edgelistdict = {source: source_nodes, target: target_nodes} | edge_attr
     return pd.DataFrame(edgelistdict)
 
 
@@ -334,7 +333,7 @@ def from_pandas_edgelist(df, source='source', target='target', edge_attr=None,
     try:
         eattrs = zip(*[df[col] for col in cols])
     except (KeyError, TypeError) as e:
-        msg = "Invalid edge_attr argument: %s" % edge_attr
+        msg = f"Invalid edge_attr argument: {edge_attr}"
         raise nx.NetworkXError(msg)
     for s, t, attrs in zip(df[source], df[target], eattrs):
         if g.is_multigraph():
@@ -445,8 +444,7 @@ def to_numpy_matrix(G, nodelist=None, dtype=None, order=None,
     A = to_numpy_array(G, nodelist=nodelist, dtype=dtype, order=order,
                        multigraph_weight=multigraph_weight, weight=weight,
                        nonedge=nonedge)
-    M = np.asmatrix(A, dtype=dtype)
-    return M
+    return np.asmatrix(A, dtype=dtype)
 
 
 def from_numpy_matrix(A, parallel_edges=False, create_using=None):
@@ -536,24 +534,25 @@ def from_numpy_matrix(A, parallel_edges=False, create_using=None):
     """
     # This should never fail if you have created a numpy matrix with numpy...
     import numpy as np
-    kind_to_python_type = {'f': float,
-                           'i': int,
-                           'u': int,
-                           'b': bool,
-                           'c': complex,
-                           'S': str,
-                           'V': 'void'}
-    kind_to_python_type['U'] = str
+    kind_to_python_type = {
+        'f': float,
+        'i': int,
+        'u': int,
+        'b': bool,
+        'c': complex,
+        'S': str,
+        'V': 'void',
+        'U': str,
+    }
     G = nx.empty_graph(0, create_using)
     n, m = A.shape
     if n != m:
-        raise nx.NetworkXError("Adjacency matrix is not square.",
-                               "nx,ny=%s" % (A.shape,))
+        raise nx.NetworkXError("Adjacency matrix is not square.", f"nx,ny={A.shape}")
     dt = A.dtype
     try:
         python_type = kind_to_python_type[dt.kind]
     except Exception:
-        raise TypeError("Unknown numpy data type: %s" % dt)
+        raise TypeError(f"Unknown numpy data type: {dt}")
 
     # Make sure we get even the isolated nodes of the graph.
     G.add_nodes_from(range(n))
@@ -569,11 +568,6 @@ def from_numpy_matrix(A, parallel_edges=False, create_using=None):
         triples = ((u, v, {name: kind_to_python_type[dtype.kind](val)
                            for (_, dtype, name), val in zip(fields, A[u, v])})
                    for u, v in edges)
-    # If the entries in the adjacency matrix are integers, the graph is a
-    # multigraph, and parallel_edges is True, then create parallel edges, each
-    # with weight 1, for each entry in the adjacency matrix. Otherwise, create
-    # one edge for each positive entry in the adjacency matrix and set the
-    # weight of that edge to be the entry in the matrix.
     elif python_type is int and G.is_multigraph() and parallel_edges:
         chain = itertools.chain.from_iterable
         # The following line is equivalent to:
@@ -582,8 +576,10 @@ def from_numpy_matrix(A, parallel_edges=False, create_using=None):
         #         for d in range(A[u, v]):
         #             G.add_edge(u, v, weight=1)
         #
-        triples = chain(((u, v, dict(weight=1)) for d in range(A[u, v]))
-                        for (u, v) in edges)
+        triples = chain(
+            ((u, v, dict(weight=1)) for _ in range(A[u, v]))
+            for (u, v) in edges
+        )
     else:  # basic data type
         triples = ((u, v, dict(weight=python_type(A[u, v])))
                    for u, v in edges)
@@ -665,7 +661,7 @@ def to_numpy_recarray(G, nodelist=None, dtype=None, order=None):
     for u, v, attrs in G.edges(data=True):
         if (u in nodeset) and (v in nodeset):
             i, j = index[u], index[v]
-            values = tuple([attrs[n] for n in names])
+            values = tuple(attrs[n] for n in names)
             M[i, j] = values
             if undirected:
                 M[j, i] = M[i, j]
@@ -786,10 +782,7 @@ def to_scipy_sparse_matrix(G, nodelist=None, dtype=None,
         d = data + data
         r = row + col
         c = col + row
-        # selfloop entries get double counted when symmetrizing
-        # so we subtract the data on the diagonal
-        selfloops = list(nx.selfloop_edges(G, data=True))
-        if selfloops:
+        if selfloops := list(nx.selfloop_edges(G, data=True)):
             diag_index, diag_data = zip(*((index[u], -d.get(weight, 1))
                                           for u, v, d in selfloops
                                           if u in index and v in index))
@@ -799,10 +792,8 @@ def to_scipy_sparse_matrix(G, nodelist=None, dtype=None,
         M = sparse.coo_matrix((d, (r, c)), shape=(nlen, nlen), dtype=dtype)
     try:
         return M.asformat(format)
-    # From Scipy 1.1.0, asformat will throw a ValueError instead of an
-    # AttributeError if the format if not recognized.
     except (AttributeError, ValueError):
-        raise nx.NetworkXError("Unknown sparse matrix format: %s" % format)
+        raise nx.NetworkXError(f"Unknown sparse matrix format: {format}")
 
 
 def _csr_gen_triples(A):
@@ -932,8 +923,7 @@ def from_scipy_sparse_matrix(A, parallel_edges=False, create_using=None,
     G = nx.empty_graph(0, create_using)
     n, m = A.shape
     if n != m:
-        raise nx.NetworkXError(
-            "Adjacency matrix is not square. nx,ny=%s" % (A.shape,))
+        raise nx.NetworkXError(f"Adjacency matrix is not square. nx,ny={A.shape}")
     # Make sure we get even the isolated nodes of the graph.
     G.add_nodes_from(range(n))
     # Create an iterable over (u, v, w) triples and for each triple, add an
@@ -952,7 +942,7 @@ def from_scipy_sparse_matrix(A, parallel_edges=False, create_using=None,
         #         for d in range(A[u, v]):
         #             G.add_edge(u, v, weight=1)
         #
-        triples = chain(((u, v, 1) for d in range(w)) for (u, v, w) in triples)
+        triples = chain(((u, v, 1) for _ in range(w)) for (u, v, w) in triples)
     # If we are creating an undirected multigraph, only add the edges from the
     # upper triangle of the matrix. Otherwise, add all the edges. This relies
     # on the fact that the vertices created in the
